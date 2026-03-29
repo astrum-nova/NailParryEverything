@@ -1,8 +1,11 @@
 using System;
+using System.Collections;
+using System.Linq;
 using BepInEx;
 using BepInEx.Logging;
 using GlobalEnums;
 using HarmonyLib;
+using tk2dRuntime.TileMap;
 using UnityEngine;
 
 namespace nailparryeverything;
@@ -19,6 +22,13 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     private static bool PARRY_DAMAGES_ENEMY;
     private static float PARRY_DAMAGE_MULTIPLIER;
     private static float PARRY_INVULNERABILITY;
+
+    private static readonly string[] hornetSlashes = [
+        "Slash",
+        "DownSlash",
+        "UpSlash",
+        "WallSlash"
+    ];
 
     private void Awake()
     {
@@ -39,7 +49,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         PARRY_INVULNERABILITY = Config.Bind(
             "Nail Parry Everything",
             "Parry Invulnerability",
-            0.5f,
+            0.3f,
             "The invulnerability time in seconds hornet receives after a successful parry. (default is 0.5)"
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
@@ -55,25 +65,32 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(DamageHero), "OnTriggerEnter2D")]
     private static void DamageHero_OnTriggerEnter2D(DamageHero __instance, Collider2D collision)
     {
-        //TODO: 
-        //1: NARROW DOWN THE SLASH THINGS FOR HORNET ONLY
+        //TODO:
+        //1: DONT MAKE IT IGNORE ENEMIES BUT GIVE A COOLDOWN TO ENEMY ATTACKS TO INCENTIVISE PLAYERS TO KEEP IT FOR BODY ATTACKS LIKE BEASTFLY DASH 
         //2: THIS HAPPENS FOR A FEW FRAMES EVERY TIME, MAKE IT SO IT ONLY HAPPENS ONCE AND IGNORES THE NEXT FRAMES
-        //3: ONLY IF THE DAMAGE HERO INSTANCE IS ON THE ATTACK LAYER
-
-        if (!collision.gameObject.name.Contains("Slash")) return;
-        if () return;
+        
+        if (!hornetSlashes.Contains(collision.gameObject.name) || !__instance.enabled) return;
         Instance.StartCoroutine(__instance.NailClash(0, "NPE PARRY", collision.transform.position));
         HeroController._instance.NailParry();
+        //HeroController._instance.StartInvulnerable(PARRY_INVULNERABILITY);
         GameManager._instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
+        Instance.StartCoroutine(DisableDamageHero(__instance));
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(DamageHero), "OnEnable")]
     private static void DamageHero_OnEnable(DamageHero __instance)
     {
-        /*__instance.canClashTink = true;
+        __instance.canClashTink = true;
         __instance.forceParry = true;
         __instance.noClashFreeze = false;
-        __instance.preventClashTink = false;*/
+        __instance.preventClashTink = false;
+    }
+
+    private static IEnumerator DisableDamageHero(DamageHero __instance)
+    {
+        __instance.enabled = false;
+        yield return new WaitForSeconds(PARRY_INVULNERABILITY);
+        __instance.enabled = true;
     }
 }
