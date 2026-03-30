@@ -49,8 +49,8 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         PARRY_INVULNERABILITY = Config.Bind(
             "Nail Parry Everything",
             "Parry Invulnerability",
-            0.3f,
-            "The invulnerability time in seconds hornet receives after a successful parry. (default is 0.5)"
+            0.4f,
+            "The invulnerability time in seconds hornet receives against an attack for parrying it. (default is 0.4)"
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
     }
@@ -65,19 +65,32 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(DamageHero), "OnTriggerEnter2D")]
     private static void DamageHero_OnTriggerEnter2D(DamageHero __instance, Collider2D collision)
     {
-        //TODO:
-        //1: DONT MAKE IT IGNORE ENEMIES BUT GIVE A COOLDOWN TO ENEMY ATTACKS TO INCENTIVISE PLAYERS TO KEEP IT FOR BODY ATTACKS LIKE BEASTFLY DASH 
-        //2: THIS HAPPENS FOR A FEW FRAMES EVERY TIME, MAKE IT SO IT ONLY HAPPENS ONCE AND IGNORES THE NEXT FRAMES
-        
         if (!hornetSlashes.Contains(collision.gameObject.name) || !__instance.enabled) return;
-        Instance.StartCoroutine(__instance.NailClash(0, "NPE PARRY", collision.transform.position));
-        HeroController._instance.NailParry();
-        //HeroController._instance.StartInvulnerable(PARRY_INVULNERABILITY);
-        GameManager._instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
-        Instance.StartCoroutine(DisableDamageHero(__instance));
+        var potentialHealthManager = __instance.gameObject.GetComponentInParent<HealthManager>();
+        if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
+        {
+            //potentialHealthManager.invincible = true;
+            //TODO:
+            //1. GET THE CONTROL FSM FROM THE HEALTH MANAGER AND FIND ITS NAME
+            //2. MATCH THE NAME WITH A LIST OF BOSS NAMES YOU WANT TO ADD TWEAKS TO
+            //3. GET THE LIST OF ALLOWED STATES RELATED TO THIS BOSS FSM
+            //4. IF THE CURRENT FSM ACTIVE STATE MATCHES ONE OF THOSE IN THE LIST OF ALLOWED STATES ALLOW A PARRY
+        }
+        //else
+        {
+            Instance.StartCoroutine(__instance.NailClash(0, "NPE PARRY", collision.transform.position));
+            HeroController._instance.NailParry();
+            GameManager._instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
+            Instance.StartCoroutine(DisableDamageHero(__instance));
+            //TODO:
+            //1. MAKE A HASMAP STRING->FLOAT OF ALL THE ATTACKS THAT NEED HORNET IFRAMES AND MATCH IT WITH THE CORRESPONDING IFRAMES NEEDED
+            // FOR EXAMPLE map{("down dash", 0.3f), ("skull tyrant falling boulder", 0.2f)}
+            // USE THE SAME NAMES OF THE DAMAGE HERO INSTANCE FOR THE KEYS
+            /* * HeroController._instance.StartInvulnerable(PARRY_INVULNERABILITY); * */
+        }
     }
 
-    [HarmonyPrefix]
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), "OnEnable")]
     private static void DamageHero_OnEnable(DamageHero __instance)
     {
