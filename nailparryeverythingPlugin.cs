@@ -54,13 +54,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
     }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(DamageHero), "OnCollisionEnter2D")]
-    private static void DamageHero_OnCollisionEnter2D(DamageHero __instance, Collider2D collision)
-    {
-    }
-
+    
     [HarmonyPrefix]
     [HarmonyPatch(typeof(DamageHero), "OnTriggerEnter2D")]
     private static void DamageHero_OnTriggerEnter2D(DamageHero __instance, Collider2D collision)
@@ -98,6 +92,8 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         __instance.forceParry = true;
         __instance.noClashFreeze = false;
         __instance.preventClashTink = false;
+        
+        //TODO: TRY TO USE THE ON CLASH EVENTS WRAPPER AT THE BOTTOM OF THE DamageHero CLASS
     }
 
     private static IEnumerator DisableDamageHero(DamageHero __instance)
