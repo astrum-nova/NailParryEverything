@@ -17,6 +17,7 @@ A Hollow Knight: Silksong mod.
 - tornado is FUCKING WEIRD, tormented one can be parried (((sometimes))) and normal one cant, TEAM CHERRY IT'S THE SAME BOSS WHAT ARE WE DOING???
 > cogwork dancers
 - whenever they dash down they follow up with the surrounding slashes, if you parry the dash down you cant parry the slashes, give hornet iframes when parrying the dash down
+>
 
 # TWEAKS NEEDED
 > savage beastfly
