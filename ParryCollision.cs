@@ -11,7 +11,6 @@ public class ParryCollision : MonoBehaviour
     {
         //nailparryeverythingPlugin.log("TRIGGER: " + other.gameObject.name);
         var damageHero = other.gameObject.GetComponentInParent<DamageHero>();
-        nailparryeverythingPlugin.log(damageHero.gameObject.name);
         if ((damageHero == null || !damageHero.enabled || tweaks.CheckBlacklist(other)) && !tweaks.CheckWhitelist(other)) return;
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
         //TODO: MAKE A BLACKLIST FOR STUFF LIKE WIDOW GROUND BELLS AND SISTER SPLINTER THORNS
@@ -26,10 +25,11 @@ public class ParryCollision : MonoBehaviour
         }
         //else
         {
-            nailparryeverythingPlugin.Instance.StartCoroutine(damageHero.NailClash(0, "NPE PARRY", transform.position));
+            if (damageHero != null) nailparryeverythingPlugin.Instance.StartCoroutine(damageHero.NailClash(0, "NPE PARRY", transform.position));
             HeroController._instance.NailParry();
             GameManager._instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
-            StartCoroutine(DisableDamageHero(damageHero));
+            if (damageHero != null) StartCoroutine(DisableDamageHero(damageHero));
+            else HeroController._instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
         }
     }
     

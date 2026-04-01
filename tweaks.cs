@@ -22,6 +22,7 @@ public class tweaks
     [
         "Spike Collider",
         "Splinter Queen Spike",
+        "Splinter Queen Gate Spike",
     ];
 
     public static bool CheckWhitelist(Collider2D other)

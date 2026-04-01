@@ -42,7 +42,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         PARRY_INVULNERABILITY = Config.Bind(
             "Nail Parry Everything",
             "Parry Invulnerability",
-            0.4f,
+            0.3f,
             "The invulnerability time in seconds hornet receives against an attack for parrying it. (default is 0.4)"
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
@@ -59,29 +59,26 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     private static void DamageHero_NailClash(DamageHero __instance)
     {
         log(@"/// ENTERING DamageHero.NailClash FROM nailparryeverythingPlugin.DamageHero_NailClash");
-        //log("__instance.gameObject.name:  " + __instance.gameObject.name);
-        //log("__instance.gameObject.transform.parent.name:  " + __instance.gameObject.transform.parent.name);
-        //log("__instance.gameObject.transform.root.name:  " + __instance.gameObject.transform.root.name);
-        HeroController._instance.StartInvulnerable(HandleAdditionalIframes(__instance.GetComponentInParent<Collider2D>()));
+        var names = getGameObjectParentRootNames(__instance.gameObject);
+        log(names[0] + ":" + names[1] + ":" + names[2]);
+        HeroController._instance.StartInvulnerable(HandleAdditionalIframes(__instance.gameObject));
     }
     
-    private static float HandleAdditionalIframes(Collider2D other)
+    private static float HandleAdditionalIframes(GameObject gameObject)
     {
-        var gameObject = other.gameObject;
-        var parent = gameObject.transform.parent;
-        var root = gameObject.transform.root;
+        var names = getGameObjectParentRootNames(gameObject);
+        var gameObjectName = names[0];
+        var parentName = names[1];
+        var rootName = names[2];
         
-        //! DEBUG
-        //log("\n/////////////////////////////////////////////////////\n" + "gameObject.name: " + gameObject.name + "\n" + "parent.name: " + (parent != null ? parent.name : "NULL-PARENT") + "\n" + "root.name: " + (root != null ? root.name : "NULL-ROOT") + "\n" + @"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
-        //! DEBUG
-        
-        //* Skull Tyrant
-        if (root.name.StartsWith("Bone_Boulder SK")) return 0.35f;
         //* Widow
-        if (gameObject.name.StartsWith("Spinner AtkBell")) return 0.35f;
-        
+        if (rootName.StartsWith("Spinner_vertical_slash")) return 0.35f;
+        //* Skull Tyrant
+        if (rootName.StartsWith("Bone_Boulder SK")) return 0.35f;
         return 0;
     }
+
+    public static string[] getGameObjectParentRootNames(GameObject gameObject) => [gameObject == null ? "NULLGAMEOBJECT" : gameObject.name, gameObject.transform.parent ==  null ? "NULLPARENT" : gameObject.transform.parent.name,  gameObject.transform.root ==  null ? "NULLROOT" : gameObject.transform.root.name];
     
     private static IEnumerator DisableDamageHero(DamageHero __instance)
     {
