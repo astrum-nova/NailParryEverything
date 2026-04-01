@@ -54,6 +54,41 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     {
         __instance.gameObject.AddComponent<ParryCollision>();
     }
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.NailClash))]
+    private static void DamageHero_NailClash(DamageHero __instance)
+    {
+        log(@"/// ENTERING DamageHero.NailClash FROM nailparryeverythingPlugin.DamageHero_NailClash");
+        //log("__instance.gameObject.name:  " + __instance.gameObject.name);
+        //log("__instance.gameObject.transform.parent.name:  " + __instance.gameObject.transform.parent.name);
+        //log("__instance.gameObject.transform.root.name:  " + __instance.gameObject.transform.root.name);
+        HeroController._instance.StartInvulnerable(HandleAdditionalIframes(__instance.GetComponentInParent<Collider2D>()));
+    }
+    
+    private static float HandleAdditionalIframes(Collider2D other)
+    {
+        var gameObject = other.gameObject;
+        var parent = gameObject.transform.parent;
+        var root = gameObject.transform.root;
+        
+        //! DEBUG
+        //log("\n/////////////////////////////////////////////////////\n" + "gameObject.name: " + gameObject.name + "\n" + "parent.name: " + (parent != null ? parent.name : "NULL-PARENT") + "\n" + "root.name: " + (root != null ? root.name : "NULL-ROOT") + "\n" + @"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
+        //! DEBUG
+        
+        //* Skull Tyrant
+        if (root.name.StartsWith("Bone_Boulder SK")) return 0.35f;
+        //* Widow
+        if (gameObject.name.StartsWith("Spinner AtkBell")) return 0.35f;
+        
+        return 0;
+    }
+    
+    private static IEnumerator DisableDamageHero(DamageHero __instance)
+    {
+        __instance.enabled = false;
+        yield return new WaitForSeconds(PARRY_INVULNERABILITY);
+        __instance.enabled = true;
+    }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), "OnEnable")]

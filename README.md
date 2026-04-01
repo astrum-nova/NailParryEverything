@@ -5,8 +5,6 @@ A Hollow Knight: Silksong mod.
 # FIXES NEEDED:
 > sister splinter 
 - thorns get parried, they shouldn't
-> skull tyrant
-- falling rocks explode on the ground and the ground explosion isn't parried, give custom iframes to hornet when the parried DamageHero is the falling rock
 > widow
 - vertical bells animation can be parried but the bell it spawns from the ground isn't parried, give hornet some iframes for parrying the vertical falling bell animation
 - the ground bells can be parried, they shouldn't
