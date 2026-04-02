@@ -3,20 +3,37 @@
 A Hollow Knight: Silksong mod.
 
 # FIXES NEEDED:
-> sister splinter 
-- thorns get parried, they shouldn't
-> widow
-- vertical bells animation can be parried but the bell it spawns from the ground isn't parried, give hornet some iframes for parrying the vertical falling bell animation
-- the ground bells can be parried, they shouldn't
-> phantom
-- give hornet some iframes for the triple stab so the contact damage doesn't interfere
-- give hornet some iframes after parrying the dragoon dive thing cause for some reason it doesn't work, DamageHero shenanigans im assuming
-> trobbio
-- tornado is FUCKING WEIRD, tormented one can be parried (((sometimes))) and normal one cant, TEAM CHERRY IT'S THE SAME BOSS WHAT ARE WE DOING???
-> cogwork dancers
-- whenever they dash down they follow up with the surrounding slashes, if you parry the dash down you cant parry the slashes, give hornet iframes when parrying the dash down
->
+> voltvyrm
+- fix the ball not being parryable
 
 # TWEAKS NEEDED
 > savage beastfly
 - make it so you can parry its dashes and ground slams
+> last judge
+- make the ground slam parryable
+> moss mother
+- make the dash parryable
+> bell beast
+- make the dash and jump parryable
+> phantom
+- make her dash to the pin projectile parryable
+> craw father
+- make him parryable during the beak slam, cause his beak hitbox is buggy
+> gurr
+- make his ground dash parryable
+- make his jump parryable
+> unraveled
+- make his dash parryable
+> broodmother
+- make her dashes parryable
+> chef lugoli
+- make his dashes and ground slams parryable
+> groal
+- make his dive parryable
+> karmelita
+- make her dash parryable
+
+# FEATURE NEEDED
+> royal guard
+> sekiro stagger phase end thing
+> damage normal enemies to avoid softlock

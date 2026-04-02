@@ -5,24 +5,34 @@ using UnityEngine;
 
 namespace nailparryeverything;
 
-public class tweaks
+public static class tweaks
 {
+    private static bool ragingConchDrillParried = false;
     public static Dictionary<string, float> parryableStates =  new()
     {
         
     };
 
-    public static string[] whitelist =
+    public static readonly string[] whitelist =
     [
         "Dancer",
         "Tornado Event Sender",
+        "Tormented Trobbio Tornado",
+        "Drill Multihitter",
+        "Conch Projectile Heavy",
+        "lightning_rod_explode",
+        "Ward Corpse Projectile",
+        "Cloverstag White Sickle",
+        "Slab Fly Glob",
+        "Pollen Shot",
     ];
 
-    public static string[] blacklist =
+    public static readonly string[] blacklist =
     [
         "Spike Collider",
         "Splinter Queen Spike",
         "Splinter Queen Gate Spike",
+        "Coral Crust Tree Plat",
     ];
 
     public static bool CheckWhitelist(Collider2D other)
@@ -47,4 +57,34 @@ public class tweaks
         if (!res && root != null) res = blacklist.Any(whitelistedObject => other.gameObject.transform.root.name.StartsWith(whitelistedObject));
         return res;
     }
+    public static float HandleAdditionalIframes(GameObject gameObject)
+    {
+        var names = getGameObjectParentRootNames(gameObject);
+        var gameObjectName = names[0];
+        var parentName = names[1];
+        var rootName = names[2];
+
+        //* Cogwork Dancers
+        if (gameObjectName.StartsWith("Dash Hit")) return 0.25f;
+        //* Phantom
+        if (parentName.StartsWith("Dragoon Blast") || parentName.StartsWith("Dragoon Down") || gameObjectName.StartsWith("Dragoon Down Damager")) return 0.25f;
+        //* Widow
+        if (rootName.StartsWith("Spinner_vertical_slash")) return 0.35f;
+        //* Skull Tyrant
+        if (rootName.StartsWith("Bone_Boulder SK")) return 0.35f;
+        //* Raging Conchfly
+        if (gameObjectName.StartsWith("Coral Conch Driller Roar")) return 0.35f;
+        //* GrandMother Silk
+        if (gameObjectName.StartsWith("SlashHit") && parentName.StartsWith("DashSlash Effect")) return 0.3f;
+        //* Signis & Gron
+        if (gameObjectName.StartsWith("Spear") && parentName.StartsWith("Stomp Colliders")) return 0.3f;
+        //* Watcher at the edge
+        if (parentName.StartsWith("sand_burst_effect_uppercut")) return 0.3f;
+        //* Groal the Great
+        if (gameObjectName.StartsWith("Swamp Shaman Fireball")) return 0.3f;
+        //* Lost Garmond
+        if (gameObjectName.StartsWith("Abyss Bullet")) return 0.3f;
+        return 0;
+    }
+    public static string[] getGameObjectParentRootNames(GameObject gameObject) => [gameObject == null ? "NULLGAMEOBJECT" : gameObject.name, gameObject.transform.parent ==  null ? "NULLPARENT" : gameObject.transform.parent.name,  gameObject.transform.root ==  null ? "NULLROOT" : gameObject.transform.root.name];
 }

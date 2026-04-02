@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using GlobalEnums;
 using UnityEngine;
@@ -9,14 +10,17 @@ public class ParryCollision : MonoBehaviour
 {
     private void OnTriggerEnter2D(Collider2D other)
     {
-        //nailparryeverythingPlugin.log("TRIGGER: " + other.gameObject.name);
+        var names = tweaks.getGameObjectParentRootNames(other.gameObject);
+        nailparryeverythingPlugin.log("TRIGGER:");
+        nailparryeverythingPlugin.log("name: " + names[0]);
+        nailparryeverythingPlugin.log("parent: " + names[1]);
+        nailparryeverythingPlugin.log("root: " + names[2]);
         var damageHero = other.gameObject.GetComponentInParent<DamageHero>();
         if ((damageHero == null || !damageHero.enabled || tweaks.CheckBlacklist(other)) && !tweaks.CheckWhitelist(other)) return;
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
-        //TODO: MAKE A BLACKLIST FOR STUFF LIKE WIDOW GROUND BELLS AND SISTER SPLINTER THORNS
         if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
         {
-            //potentialHealthManager.invincible = true;
+            //if (potentialHealthManager.hp > 400) potentialHealthManager.invincible = true;
             //TODO:
             //1. GET THE CONTROL FSM FROM THE HEALTH MANAGER AND FIND ITS NAME
             //2. MATCH THE NAME WITH A LIST OF BOSS NAMES YOU WANT TO ADD TWEAKS TO
@@ -29,10 +33,13 @@ public class ParryCollision : MonoBehaviour
             HeroController._instance.NailParry();
             GameManager._instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
             if (damageHero != null) StartCoroutine(DisableDamageHero(damageHero));
-            else HeroController._instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
+            else
+            {
+                HeroController._instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
+            }
         }
     }
-    
+
     private static IEnumerator DisableDamageHero(DamageHero __instance)
     {
         __instance.enabled = false;

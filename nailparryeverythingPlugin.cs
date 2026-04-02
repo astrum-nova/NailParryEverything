@@ -50,43 +50,17 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
-    private static void NailSlash_StartSlash(NailSlash __instance)
-    {
-        __instance.gameObject.AddComponent<ParryCollision>();
-    }
+    private static void NailSlash_StartSlash(NailSlash __instance) => __instance.gameObject.AddComponent<ParryCollision>();
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.NailClash))]
     private static void DamageHero_NailClash(DamageHero __instance)
     {
         log(@"/// ENTERING DamageHero.NailClash FROM nailparryeverythingPlugin.DamageHero_NailClash");
-        var names = getGameObjectParentRootNames(__instance.gameObject);
+        var names = tweaks.getGameObjectParentRootNames(__instance.gameObject);
         log(names[0] + ":" + names[1] + ":" + names[2]);
-        HeroController._instance.StartInvulnerable(HandleAdditionalIframes(__instance.gameObject));
+        HeroController._instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
     }
     
-    private static float HandleAdditionalIframes(GameObject gameObject)
-    {
-        var names = getGameObjectParentRootNames(gameObject);
-        var gameObjectName = names[0];
-        var parentName = names[1];
-        var rootName = names[2];
-        
-        //* Widow
-        if (rootName.StartsWith("Spinner_vertical_slash")) return 0.35f;
-        //* Skull Tyrant
-        if (rootName.StartsWith("Bone_Boulder SK")) return 0.35f;
-        return 0;
-    }
-
-    public static string[] getGameObjectParentRootNames(GameObject gameObject) => [gameObject == null ? "NULLGAMEOBJECT" : gameObject.name, gameObject.transform.parent ==  null ? "NULLPARENT" : gameObject.transform.parent.name,  gameObject.transform.root ==  null ? "NULLROOT" : gameObject.transform.root.name];
-    
-    private static IEnumerator DisableDamageHero(DamageHero __instance)
-    {
-        __instance.enabled = false;
-        yield return new WaitForSeconds(PARRY_INVULNERABILITY);
-        __instance.enabled = true;
-    }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), "OnEnable")]
     private static void DamageHero_OnEnable(DamageHero __instance)
