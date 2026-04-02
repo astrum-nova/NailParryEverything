@@ -7,12 +7,22 @@ namespace nailparryeverything;
 
 public static class tweaks
 {
-    private static bool ragingConchDrillParried = false;
-    public static Dictionary<string, float> parryableStates =  new()
+    public static readonly Dictionary<string, string[]> parryableStates =  new()
     {
-        
+        //! { "Great Slash Sly", ["Slash 1", "Slash 2", "Cyclone Start"] },
+        { "Mossbone Mother", ["Swoop"] },
+        { "Bone Flyer Giant", ["Charge", "Stomp"] },
+        { "Last Judge", ["Stomp Down"] },
+        { "Bone Beast", ["Charge", "Leap Out"] },
+        { "Phantom", ["A Dash", "G Dash"] },
+        { "Crawfather", ["Dive", "Peck Land"] },
+        { "Bone Hunter Trapper", ["Charge", "Up Leap", "Diag Leap", "Fall"] },
+        { "Conductor Boss", ["Charge"] },
+        { "Slab Fly Broodmother", ["Leap"] },
+        { "Roachkeeper Chef", ["Slam In", "Butt Air", "Stomp"] },
+        { "Swamp Shaman", ["Dive"] },
+        { "Hunter Queen Boss", ["Dash Grind"] },
     };
-
     public static readonly string[] whitelist =
     [
         "Dancer",
@@ -85,6 +95,8 @@ public static class tweaks
         //* Lost Garmond
         if (gameObjectName.StartsWith("Abyss Bullet")) return 0.3f;
         return 0;
-    }
+    } 
     public static string[] getGameObjectParentRootNames(GameObject gameObject) => [gameObject == null ? "NULLGAMEOBJECT" : gameObject.name, gameObject.transform.parent ==  null ? "NULLPARENT" : gameObject.transform.parent.name,  gameObject.transform.root ==  null ? "NULLROOT" : gameObject.transform.root.name];
+
+    public static bool IsValidActiveState(string bossName, string stateName) => parryableStates.TryGetValue(bossName, out var states) && states.Any(stateName.StartsWith);
 }

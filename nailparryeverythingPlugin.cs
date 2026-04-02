@@ -55,9 +55,6 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.NailClash))]
     private static void DamageHero_NailClash(DamageHero __instance)
     {
-        log(@"/// ENTERING DamageHero.NailClash FROM nailparryeverythingPlugin.DamageHero_NailClash");
-        var names = tweaks.getGameObjectParentRootNames(__instance.gameObject);
-        log(names[0] + ":" + names[1] + ":" + names[2]);
         HeroController._instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
     }
     
