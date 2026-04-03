@@ -15,7 +15,14 @@ public class ParryCollision : MonoBehaviour
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
         if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
         {
-            potentialHealthManager.invincible = true;
+            if (PlayerData._instance.silk >= 9)
+            {
+                potentialHealthManager.invincible = false;
+                potentialHealthManager.hp -= (int) (PlayerData._instance.nailDamage * PlayerData._instance.silk * nailparryeverythingPlugin.PARRY_DAMAGE_MULTIPLIER);
+                //potentialHealthManager.hp -= potentialHealthManager.hp * (PlayerData._instance.silk * (5 / 3) - 5) / 100;
+                PlayerData._instance.silk = 0;
+                GameManager._instance.FreezeMoment(FreezeMomentTypes.BossStun);
+            } else potentialHealthManager.invincible = true;
             var fsm = PlayMakerFSM.FindFsmOnGameObject(potentialHealthManager.gameObject, "Control");
             if (fsm == null) fsm = potentialHealthManager.gameObject.GetComponent<PlayMakerFSM>();
             nailparryeverythingPlugin.log("KEY: " + fsm.Fsm.FsmComponent.name);
@@ -29,6 +36,7 @@ public class ParryCollision : MonoBehaviour
         else
         {
             HeroController._instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
+            nailparryeverythingPlugin.OnParry();
         }
     }
 

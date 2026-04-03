@@ -9,7 +9,6 @@ public static class tweaks
 {
     public static readonly Dictionary<string, string[]> parryableStates =  new()
     {
-        //! { "Great Slash Sly", ["Slash 1", "Slash 2", "Cyclone Start"] },
         { "Mossbone Mother", ["Swoop"] },
         { "Bone Flyer Giant", ["Charge", "Stomp"] },
         { "Last Judge", ["Stomp Down"] },
@@ -22,6 +21,8 @@ public static class tweaks
         { "Roachkeeper Chef", ["Slam In", "Butt Air", "Stomp"] },
         { "Swamp Shaman", ["Dive"] },
         { "Hunter Queen Boss", ["Dash Grind"] },
+        { "Vampire Gnat", ["Charge"] },
+        { "Flower Queen Boss", ["Leap"] },
     };
     public static readonly string[] whitelist =
     [

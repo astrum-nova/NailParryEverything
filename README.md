@@ -5,7 +5,10 @@ A Hollow Knight: Silksong mod.
 # FIXES NEEDED:
 > voltvyrm
 - fix the ball not being parryable
+> general
 - fix DamageHero patch affecting boss contact damage too leading to them bouncing funny on walls (look at moss mother for example)
+- the current parryable states system uses startsWith, make it equals and retake the state names lol unlucky
+- fix gms health manager being RETARDED
 
 # TWEAKS NEEDED
 > craw father
@@ -20,6 +23,8 @@ A Hollow Knight: Silksong mod.
 - ~~make his dive parryable~~
 > karmelita
 - ~~make her dash parryable~~
+> nyleth
+- make her dash parryable
 
 # FEATURES NEEDED
 > royal guard

@@ -20,7 +20,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static nailparryeverythingPlugin Instance { get; set; } = null!;
     
     private static bool PARRY_DAMAGES_ENEMY;
-    private static float PARRY_DAMAGE_MULTIPLIER;
+    public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
 
     private void Awake()
@@ -56,6 +56,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     private static void DamageHero_NailClash(DamageHero __instance)
     {
         HeroController._instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
+        OnParry();
     }
     
     [HarmonyPostfix]
@@ -69,4 +70,17 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         
         //TODO: TRY TO USE THE ON CLASH EVENTS WRAPPER AT THE BOTTOM OF THE DamageHero CLASS
     }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(HealthManager), "OnEnable")]
+    private static void HealthManager_OneEnable(HealthManager __instance)
+    {
+        __instance.invincible = true;
+    }
+    
+    public static void OnParry()
+    {
+        HeroController._instance.AddSilk(1, true);
+        
+    } 
 }
