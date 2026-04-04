@@ -15,18 +15,22 @@ public class ParryCollision : MonoBehaviour
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
         if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
         {
-            if (PlayerData._instance.silk >= 9)
-            {
-                potentialHealthManager.invincible = false;
-                potentialHealthManager.hp -= (int) (PlayerData._instance.nailDamage * PlayerData._instance.silk * nailparryeverythingPlugin.PARRY_DAMAGE_MULTIPLIER);
-                //potentialHealthManager.hp -= potentialHealthManager.hp * (PlayerData._instance.silk * (5 / 3) - 5) / 100;
-                PlayerData._instance.silk = 0;
-                GameManager._instance.FreezeMoment(FreezeMomentTypes.BossStun);
-            } else potentialHealthManager.invincible = true;
             var fsm = PlayMakerFSM.FindFsmOnGameObject(potentialHealthManager.gameObject, "Control");
             if (fsm == null) fsm = potentialHealthManager.gameObject.GetComponent<PlayMakerFSM>();
-            nailparryeverythingPlugin.log("KEY: " + fsm.Fsm.FsmComponent.name);
-            nailparryeverythingPlugin.log("ACTIVE STATE NAME: " + fsm.ActiveStateName);
+            if (PlayerData._instance.silk >= 9 && fsm.Fsm.name == "Control") //TODO: EXCLUDE WHILE PARRYING TOO CHECK WITH MOORWING OR WIDOW
+            {
+                potentialHealthManager.invincible = false;
+                //nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, false);
+                potentialHealthManager.hp -= (int) (PlayerData._instance.nailDamage * PlayerData._instance.silk * nailparryeverythingPlugin.PARRY_DAMAGE_MULTIPLIER);
+                if (potentialHealthManager.hp < 1) potentialHealthManager.hp = 1;
+                PlayerData._instance.silk = 0;
+                GameManager._instance.FreezeMoment(FreezeMomentTypes.BossStun);
+            }
+            potentialHealthManager.invincible = true;
+            nailparryeverythingPlugin.log("[NAIL PARRY EVERYTHING NEEDLE HIT]");
+            nailparryeverythingPlugin.log("INTERNAL BOSS NAME: \"" + fsm.name + "\"");
+            nailparryeverythingPlugin.log("ACTIVE STATE NAME:  \"" + fsm.ActiveStateName + "\"");
+            nailparryeverythingPlugin.log("AI TYPE:            \"" + fsm.Fsm.name + "\" (this should be \"Control\")");
             if (!tweaks.IsValidActiveState(fsm.Fsm.FsmComponent.name, fsm.ActiveStateName)) return;
         }
         if (damageHero != null) nailparryeverythingPlugin.Instance.StartCoroutine(damageHero.NailClash(0, "NPE PARRY", transform.position));
@@ -44,6 +48,7 @@ public class ParryCollision : MonoBehaviour
     {
         __instance.enabled = false;
         yield return new WaitForSeconds(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
+        //TODO: IF THE PARENT OBJECT GETS DESTROYED AND WE REENABLE THIS IT BREAKS, CHECK WITH PUTRIFIED DUCT SQUITS
         __instance.enabled = true;
     }
 }

@@ -63,24 +63,28 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(DamageHero), "OnEnable")]
     private static void DamageHero_OnEnable(DamageHero __instance)
     {
+        //if (__instance.gameObject.GetComponentInParent<HealthManager>() != null) return;
         __instance.canClashTink = true;
         __instance.forceParry = true;
         __instance.noClashFreeze = false;
         __instance.preventClashTink = false;
-        
-        //TODO: TRY TO USE THE ON CLASH EVENTS WRAPPER AT THE BOTTOM OF THE DamageHero CLASS
     }
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(HealthManager), "OnEnable")]
-    private static void HealthManager_OneEnable(HealthManager __instance)
+    [HarmonyPatch(typeof(HealthManager), "Start")]
+    private static void HealthManager_OneEnable(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
+
+    public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
     {
-        __instance.invincible = true;
+        healthManager.invincible = true;
+        healthManager.immuneToNailAttacks = true;
+        if (healthManager.sendDamageTo == null) return;
+        healthManager.sendDamageTo.invincible = true;
+        healthManager.sendDamageTo.immuneToNailAttacks = true;
     }
     
     public static void OnParry()
     {
-        HeroController._instance.AddSilk(1, true);
-        
+        if (PlayerData._instance.silk < PlayerData._instance.CurrentSilkMax) HeroController._instance.AddSilk(1, true);
     } 
 }

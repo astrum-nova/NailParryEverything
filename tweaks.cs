@@ -23,6 +23,9 @@ public static class tweaks
         { "Hunter Queen Boss", ["Dash Grind"] },
         { "Vampire Gnat", ["Charge"] },
         { "Flower Queen Boss", ["Leap"] },
+        { "Coral Conch Driller Giant Solo", ["Emerge", "Fly", "Impact"] },
+        { "Driller B", ["Emerge", "Fly", "Impact"] },
+        { "Driller A", ["Emerge", "Fly", "Impact"] },
     };
     public static readonly string[] whitelist =
     [
