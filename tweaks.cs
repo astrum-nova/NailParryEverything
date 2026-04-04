@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -26,6 +25,11 @@ public static class tweaks
         { "Coral Conch Driller Giant Solo", ["Emerge", "Fly", "Impact"] },
         { "Driller B", ["Emerge", "Fly", "Impact"] },
         { "Driller A", ["Emerge", "Fly", "Impact"] },
+        { "Skull King", ["Charge", "Rewake Drop", "Stomp Jump", "Jump Air"] },
+        { "Trobbio", ["Tornado"] },
+        { "Tormented Trobbio", ["Tornado"] },
+        { "Seth", ["Jump Dive"] },
+        { "Song Reed Grand", ["Stomp", "Cast"] },
     };
     public static readonly string[] whitelist =
     [
@@ -40,7 +44,6 @@ public static class tweaks
         "Slab Fly Glob",
         "Pollen Shot",
     ];
-
     public static readonly string[] blacklist =
     [
         "Spike Collider",
@@ -48,7 +51,6 @@ public static class tweaks
         "Splinter Queen Gate Spike",
         "Coral Crust Tree Plat",
     ];
-
     public static bool CheckWhitelist(Collider2D other)
     {
         var gameObject = other.gameObject;

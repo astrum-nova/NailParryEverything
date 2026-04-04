@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Linq;
+﻿using System.Collections;
 using GlobalEnums;
 using UnityEngine;
 
@@ -10,36 +8,45 @@ public class ParryCollision : MonoBehaviour
 {
     private void OnTriggerEnter2D(Collider2D other)
     {
-        var damageHero = other.gameObject.GetComponentInParent<DamageHero>();
-        if ((damageHero == null || !damageHero.enabled || tweaks.CheckBlacklist(other)) && !tweaks.CheckWhitelist(other)) return;
+        //! HEALTH MANAGER
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
         if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
         {
             var fsm = PlayMakerFSM.FindFsmOnGameObject(potentialHealthManager.gameObject, "Control");
             if (fsm == null) fsm = potentialHealthManager.gameObject.GetComponent<PlayMakerFSM>();
-            if (PlayerData._instance.silk >= 9 && fsm.Fsm.name == "Control") //TODO: EXCLUDE WHILE PARRYING TOO CHECK WITH MOORWING OR WIDOW
+            if (PlayerData.instance.silk >= 9)
             {
-                potentialHealthManager.invincible = false;
-                //nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, false);
-                potentialHealthManager.hp -= (int) (PlayerData._instance.nailDamage * PlayerData._instance.silk * nailparryeverythingPlugin.PARRY_DAMAGE_MULTIPLIER);
-                if (potentialHealthManager.hp < 1) potentialHealthManager.hp = 1;
-                PlayerData._instance.silk = 0;
-                GameManager._instance.FreezeMoment(FreezeMomentTypes.BossStun);
-            }
-            potentialHealthManager.invincible = true;
-            nailparryeverythingPlugin.log("[NAIL PARRY EVERYTHING NEEDLE HIT]");
-            nailparryeverythingPlugin.log("INTERNAL BOSS NAME: \"" + fsm.name + "\"");
-            nailparryeverythingPlugin.log("ACTIVE STATE NAME:  \"" + fsm.ActiveStateName + "\"");
-            nailparryeverythingPlugin.log("AI TYPE:            \"" + fsm.Fsm.name + "\" (this should be \"Control\")");
-            if (!tweaks.IsValidActiveState(fsm.Fsm.FsmComponent.name, fsm.ActiveStateName)) return;
+                var parryHit = new HitInstance
+                {
+                    Source = HeroController.instance.gameObject,
+                    AttackType = AttackTypes.Nail,
+                    DamageDealt = (int)(PlayerData.instance.nailDamage * PlayerData.instance.silk * nailparryeverythingPlugin.PARRY_DAMAGE_MULTIPLIER),
+                    Direction = 0f,
+                    Multiplier = 1f,
+                    MagnitudeMultiplier = 1f,
+                    IgnoreInvulnerable = false,
+                    HitEffectsType = EnemyHitEffectsProfile.EffectsTypes.Full,
+                    IsNailTag = true
+                };
+                nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, false);
+                potentialHealthManager.TakeDamage(parryHit);
+                HeroController.instance.TakeSilk(PlayerData.instance.silk);
+                GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
+            } else nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, true);
+            logfsmdata(fsm);
+            //? If the enemy related to this HealthManager isnt in a parryable active state, stop the function
+            if (!tweaks.IsValidActiveState(fsm.name, fsm.ActiveStateName)) return;
         }
+        //! DAMAGE HERO
+        var damageHero = other.gameObject.GetComponentInParent<DamageHero>();
+        if ((damageHero == null || !damageHero.enabled || tweaks.CheckBlacklist(other)) && !tweaks.CheckWhitelist(other)) return;
         if (damageHero != null) nailparryeverythingPlugin.Instance.StartCoroutine(damageHero.NailClash(0, "NPE PARRY", transform.position));
-        HeroController._instance.NailParry();
-        GameManager._instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
+        HeroController.instance.NailParry();
+        GameManager.instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
         if (damageHero != null) StartCoroutine(DisableDamageHero(damageHero));
         else
         {
-            HeroController._instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
+            HeroController.instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
             nailparryeverythingPlugin.OnParry();
         }
     }
@@ -50,5 +57,15 @@ public class ParryCollision : MonoBehaviour
         yield return new WaitForSeconds(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
         //TODO: IF THE PARENT OBJECT GETS DESTROYED AND WE REENABLE THIS IT BREAKS, CHECK WITH PUTRIFIED DUCT SQUITS
         __instance.enabled = true;
+    }
+
+    private static void logfsmdata(PlayMakerFSM fsm)
+    {
+        nailparryeverythingPlugin.log(@"/// [NAIL PARRY EVERYTHING NEEDLE HIT] \\\");
+        nailparryeverythingPlugin.log("INTERNAL ENEMY NAME: \"" + fsm.name + "\"");
+        nailparryeverythingPlugin.log("ACTIVE STATE NAME:   \"" + fsm.ActiveStateName + "\"");
+        nailparryeverythingPlugin.log("AI TYPE:             \"" + fsm.Fsm.name + "\"");
+        nailparryeverythingPlugin.log("WHITELIST FORMAT:    \"" + $"{{ \"{fsm.name}\", [\"{fsm.ActiveStateName}\"] }}," + "\"");
+        nailparryeverythingPlugin.log(@"\\\ [NAIL PARRY EVERYTHING NEEDLE HIT] ///" + "\n");
     }
 }

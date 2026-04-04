@@ -1,12 +1,6 @@
-using System;
-using System.Collections;
-using System.Linq;
 using BepInEx;
 using BepInEx.Logging;
-using GlobalEnums;
 using HarmonyLib;
-using tk2dRuntime.TileMap;
-using UnityEngine;
 
 namespace nailparryeverything;
 
@@ -22,6 +16,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     private static bool PARRY_DAMAGES_ENEMY;
     public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
+    public static int SILK_GAIN_PER_PARRY;
 
     private void Awake()
     {
@@ -36,26 +31,35 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         PARRY_DAMAGE_MULTIPLIER = Config.Bind(
             "Nail Parry Everything",
             "Parry Damage Multiplier",
-            0.33f,
-            "This value is used to determine the fraction of your nail damage to be dealt to an enemy for a successful parry. (default is 0.33)"
+            0.45f,
+            "This value is used to determine the fraction of your nail damage to be dealt to an enemy for a successful parry. (default is 0.45)"
         ).Value;
         PARRY_INVULNERABILITY = Config.Bind(
             "Nail Parry Everything",
             "Parry Invulnerability",
             0.3f,
-            "The invulnerability time in seconds hornet receives against an attack for parrying it. (default is 0.4)"
+            "The invulnerability time in seconds hornet receives against an attack for parrying it. (default is 0.3)"
+        ).Value;
+        SILK_GAIN_PER_PARRY = Config.Bind(
+            "Nail Parry Everything",
+            "Silk Gain Per Parry",
+            1,
+            "The amount of silk you gain for a successfull parry. (default is 2)"
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
-    private static void NailSlash_StartSlash(NailSlash __instance) => __instance.gameObject.AddComponent<ParryCollision>();
+    private static void NailSlash_Awake(NailSlash __instance) => __instance.gameObject.AddComponent<ParryCollision>();
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(DashStabNailAttack), nameof(DashStabNailAttack.Awake))]
+    private static void DashStabNailAttack_Awake(DashStabNailAttack __instance) => __instance.gameObject.AddComponent<ParryCollision>();
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.NailClash))]
     private static void DamageHero_NailClash(DamageHero __instance)
     {
-        HeroController._instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
+        HeroController.instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
         OnParry();
     }
     
@@ -76,15 +80,15 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
 
     public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
     {
-        healthManager.invincible = true;
-        healthManager.immuneToNailAttacks = true;
+        healthManager.invincible = invincibility;
+        healthManager.immuneToNailAttacks = invincibility;
         if (healthManager.sendDamageTo == null) return;
-        healthManager.sendDamageTo.invincible = true;
-        healthManager.sendDamageTo.immuneToNailAttacks = true;
+        healthManager.sendDamageTo.invincible = invincibility;
+        healthManager.sendDamageTo.immuneToNailAttacks = invincibility;
     }
-    
+
     public static void OnParry()
     {
-        if (PlayerData._instance.silk < PlayerData._instance.CurrentSilkMax) HeroController._instance.AddSilk(1, true);
+        if (PlayerData.instance.silk < PlayerData.instance.CurrentSilkMax) HeroController.instance.AddSilk(SILK_GAIN_PER_PARRY, true);
     } 
 }
