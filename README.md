@@ -13,6 +13,7 @@ A Hollow Knight: Silksong mod.
 - blacklist parries for the lightning tool
 - TOP PRIORITY RIGHT NOW: silk is being added past the limit
 - TOP PRIORITY RIGHT NOW: optimize everything and send it to playtest
+- TOP PRIORITY RIGHT NOW: prevent parry time freeze for a bit after one happens (check with raging conchfly)
 
 # TWEAKS NEEDED
 
