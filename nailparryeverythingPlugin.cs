@@ -1,6 +1,11 @@
+using System;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace nailparryeverything;
 
@@ -12,8 +17,9 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static void log(string msg) => logger.LogInfo(msg);
     //! DEBUG
     public static nailparryeverythingPlugin Instance { get; set; } = null!;
-    
-    private static bool PARRY_DAMAGES_ENEMY;
+    public static KeyCode COUNTER_KEY = KeyCode.LeftShift;
+    public static bool AUTO_COUNTER;
+    public static bool ENEMY_INVINCIBILITY;
     public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
     public static int SILK_GAIN_PER_PARRY;
@@ -22,33 +28,45 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     {
         Instance = this;
         Logger.LogInfo($"Plugin {Name} ({Id}) has loaded!");
-        PARRY_DAMAGES_ENEMY = Config.Bind(
+        if (!KeyCode.TryParse(Config.Bind(
+                "Nail Parry Everything",
+                "Parry Counter Key",
+                "LeftShift",
+                "Key used for a parry counter, attack while holding this and having enough silk to heal to deal damage."
+            ).Value, out COUNTER_KEY)) COUNTER_KEY = KeyCode.LeftShift;
+        AUTO_COUNTER = Config.Bind(
             "Nail Parry Everything",
-            "Parry Damages Enemies",
-            true,
-            "If true, successful parries will deal a fraction of your nail damage to the enemy. (default is true)"
+            "Auto Parry Counter",
+            false,
+            "Perform a parry counter as soon as possible automatically, without needing to hold the counter key."
         ).Value;
         PARRY_DAMAGE_MULTIPLIER = Config.Bind(
             "Nail Parry Everything",
             "Parry Damage Multiplier",
             0.45f,
-            "This value is used to determine the fraction of your nail damage to be dealt to an enemy for a successful parry. (default is 0.45)"
+            "This value is used to determine the fraction of your nail damage to be dealt to an enemy for a successful parry."
         ).Value;
         PARRY_INVULNERABILITY = Config.Bind(
             "Nail Parry Everything",
             "Parry Invulnerability",
             0.3f,
-            "The invulnerability time in seconds hornet receives against an attack for parrying it. (default is 0.3)"
+            "The invulnerability time in seconds hornet receives against an attack for parrying it."
         ).Value;
         SILK_GAIN_PER_PARRY = Config.Bind(
             "Nail Parry Everything",
             "Silk Gain Per Parry",
             1,
-            "The amount of silk you gain for a successfull parry. (default is 2)"
+            "The amount of silk you gain for a successfull parry."
+        ).Value;
+        ENEMY_INVINCIBILITY = Config.Bind(
+            "Nail Parry Everything",
+            "Enemies Immune To Normal Damage",
+            false,
+            "Wether enemies should be immune to damage with the exception of parry counters."
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
+        SceneManager.sceneLoaded += (_, _) => PlayerData.instance.hasChargeSlash = true;
     }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
     private static void NailSlash_Awake(NailSlash __instance) => __instance.gameObject.AddComponent<ParryCollision>();
@@ -56,13 +74,15 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(DashStabNailAttack), nameof(DashStabNailAttack.Awake))]
     private static void DashStabNailAttack_Awake(DashStabNailAttack __instance) => __instance.gameObject.AddComponent<ParryCollision>();
     [HarmonyPostfix]
+    [HarmonyPatch(typeof(Downspike), nameof(Downspike.StartSlash))]
+    private static void Downspike_StartSlash(Downspike __instance) => __instance.gameObject.AddComponent<ParryCollision>();
+    [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.NailClash))]
     private static void DamageHero_NailClash(DamageHero __instance)
     {
         HeroController.instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
         OnParry();
     }
-    
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), "OnEnable")]
     private static void DamageHero_OnEnable(DamageHero __instance)
@@ -90,5 +110,54 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static void OnParry()
     {
         if (PlayerData.instance.silk < PlayerData.instance.CurrentSilkMax) HeroController.instance.AddSilk(SILK_GAIN_PER_PARRY, true);
-    } 
+    }
+
+    //! DEBUG !\\
+    private void FixedUpdate()
+    {
+        if (InputHandler.Instance.inputActions.SuperDash && InputHandler.Instance.inputActions.DreamNail) HeroController.instance.RefillSilkToMax();
+    }
+    private static Text? overlayText;
+    private static GameObject? overlayCanvas;
+    private static void CreateOverlay()
+    {
+        if (overlayCanvas != null) return;
+
+        overlayCanvas = new GameObject("Nail Parry Everything Canvas");
+        GameObject.DontDestroyOnLoad(overlayCanvas);
+
+        var canvas = overlayCanvas.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 1000;
+        overlayCanvas.AddComponent<CanvasScaler>();
+        var canvasGroup = overlayCanvas.AddComponent<CanvasGroup>();
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
+        var textObj = new GameObject("Nail Parry Everything Text");
+        textObj.transform.SetParent(overlayCanvas.transform, false);
+
+        overlayText = textObj.AddComponent<Text>();
+        overlayText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        overlayText.fontSize = 24;
+        overlayText.color = Color.white;
+        overlayText.alignment = TextAnchor.UpperLeft;
+        var outline = overlayText.gameObject.AddComponent<Outline>();
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(1f, -1f);
+        overlayText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        overlayText.verticalOverflow   = VerticalWrapMode.Overflow;
+        var rect = overlayText.rectTransform;
+        rect.anchorMin = new Vector2(0.045f, 0f);
+        rect.anchorMax = new Vector2(0f, 0.8f);
+        rect.pivot = new Vector2(0f, 0f);
+        rect.offsetMin = new Vector2(10f, 10f);
+        rect.offsetMax = new Vector2(610f, -10f);
+        overlayText.raycastTarget = false;
+    }
+    public static void SetOverlayText(string text)
+    {
+        if (overlayText == null) CreateOverlay();
+        overlayText!.text = $"[Nail Parry Everything]\n" + text;
+    }
+    //! DEBUG !\\
 }

@@ -12,6 +12,7 @@ A Hollow Knight: Silksong mod.
 - somehow we are wasting the royal guard release on the conch from raging conchfly?? maybe those have health managers
 - hook throw and nail art ignores healthmanager invincibility wtffff
 - fix health manager taking parry damage while in parrying state, like widow or moorwing for example
+- blacklist parries for the lightning tool
 
 # TWEAKS NEEDED
 > craw father
