@@ -31,6 +31,7 @@ public static class tweaks
         { "Seth", ["Jump Dive"] },
         { "Song Reed Grand", ["Stomp", "Cast"] },
         { "Slab Fly Large", ["Stomp", "Grab Air", "Roll"] },
+        { "Spinner Boss", ["Charge"] },
     };
     public static readonly string[] whitelist =
     [
@@ -45,6 +46,7 @@ public static class tweaks
         "Slab Fly Glob",
         "Pollen Shot",
         "Slab Fly Small Fresh",
+        "Stomp Blast",
     ];
     public static readonly string[] blacklist =
     [

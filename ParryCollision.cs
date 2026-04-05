@@ -14,26 +14,9 @@ public class ParryCollision : MonoBehaviour
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
         if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
         {
+            nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, true);
             var fsm = PlayMakerFSM.FindFsmOnGameObject(potentialHealthManager.gameObject, "Control");
             if (fsm == null) fsm = potentialHealthManager.gameObject.GetComponent<PlayMakerFSM>();
-            if (PlayerData.instance.silk >= 9 && (Input.GetKey(nailparryeverythingPlugin.COUNTER_KEY) || nailparryeverythingPlugin.AUTO_COUNTER))
-            {
-                nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, false);
-                potentialHealthManager.TakeDamage(new HitInstance
-                {
-                    Source = HeroController.instance.gameObject,
-                    AttackType = AttackTypes.Nail,
-                    DamageDealt = (int) (PlayerData.instance.nailDamage * PlayerData.instance.silk * nailparryeverythingPlugin.PARRY_DAMAGE_MULTIPLIER),
-                    Direction = 0f,
-                    Multiplier = 1f,
-                    MagnitudeMultiplier = 1f,
-                    IgnoreInvulnerable = false,
-                    HitEffectsType = EnemyHitEffectsProfile.EffectsTypes.Full,
-                    IsNailTag = true
-                });
-                HeroController.instance.TakeSilk(PlayerData.instance.silk);
-                GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
-            } else nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, true);
             var dbg = tweaks.getGameObjectParentRootNames(other.gameObject);
             nailparryeverythingPlugin.SetOverlayText("INTERNAL ENEMY NAME: \"" + fsm.name + "\"\n" +
                                                      "ACTIVE STATE NAME: \"" + fsm.ActiveStateName + "\"\n" +

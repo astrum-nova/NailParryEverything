@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using BepInEx;
 using BepInEx.Logging;
+using GlobalEnums;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,8 +19,6 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static void log(string msg) => logger.LogInfo(msg);
     //! DEBUG
     public static nailparryeverythingPlugin Instance { get; set; } = null!;
-    public static KeyCode COUNTER_KEY = KeyCode.LeftShift;
-    public static bool AUTO_COUNTER;
     public static bool ENEMY_INVINCIBILITY;
     public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
@@ -28,29 +28,17 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     {
         Instance = this;
         Logger.LogInfo($"Plugin {Name} ({Id}) has loaded!");
-        if (!KeyCode.TryParse(Config.Bind(
-                "Keybinds",
-                "Parry Counter Key",
-                "LeftShift",
-                "Key used for a parry counter, attack while holding this and having enough silk to heal to deal damage."
-            ).Value, out COUNTER_KEY)) COUNTER_KEY = KeyCode.LeftShift;
-        AUTO_COUNTER = Config.Bind(
-            "Accessibility",
-            "Auto Parry Counter",
-            false,
-            "Perform a parry counter as soon as possible automatically, without needing to hold the counter key (turn this on if youre playing on controller)."
-        ).Value;
         PARRY_DAMAGE_MULTIPLIER = Config.Bind(
             "Modifiers",
             "Parry Damage Multiplier",
-            0.45f,
-            "This value is used to determine the fraction of your nail damage times the amount of silk you have to be dealt to an enemy for a successful parry. (nail damage * silk amount (min 9, max 18) * multiplier + nail damage)"
+            0.55f,
+            "Multiplier for the parry counter, used to balance the damage output with this formula: [nail damage * silk amount (9 min, 18 max) * multiplier], otherwise it would be too strong."
         ).Value;
         PARRY_INVULNERABILITY = Config.Bind(
             "Modifiers",
-            "Parry Invulnerability",
+            "Parry Invulnerability Time",
             0.43f,
-            "The invulnerability time in seconds hornet receives against an attack for parrying it."
+            "The invulnerability time in seconds hornet receives against an attack for parrying it. Some parried attacks will give you global invulnerability time."
         ).Value;
         SILK_GAIN_PER_PARRY = Config.Bind(
             "Modifiers",
@@ -61,10 +49,11 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         ENEMY_INVINCIBILITY = Config.Bind(
             "Accessibility",
             "Enemies Immune To Normal Damage",
-            false,
-            "Wether enemies should be immune to damage with the exception of parry counters."
+            true,
+            "Whether enemies should be immune to damage with the exception of parry counters. Set this to false if you want to be able to damange enemies without parry counters."
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
+        SceneManager.sceneLoaded += (_, _) => PlayerData.instance.hasChargeSlash = true;
     }
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
@@ -95,21 +84,49 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HealthManager), "Start")]
-    private static void HealthManager_OneEnable(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
+    private static void HealthManager_Start(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
 
     public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
     {
-        var res = invincibility && !healthManager.DoNotGiveSilk;
+        var res = invincibility && !healthManager.DoNotGiveSilk && ENEMY_INVINCIBILITY;
         healthManager.invincible = res;
-        healthManager.immuneToNailAttacks = res;
         if (healthManager.sendDamageTo == null) return;
         healthManager.sendDamageTo.invincible = res;
-        healthManager.sendDamageTo.immuneToNailAttacks = res;
     }
 
     public static void OnParry()
     {
         if (PlayerData.instance.silk < PlayerData.instance.CurrentSilkMax) HeroController.instance.AddSilk(SILK_GAIN_PER_PARRY, true);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Hit))]
+    private static void HealthManager_Hit(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
+    
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Invincible))]
+    private static void HealthManager_Invincible(HealthManager __instance, ref HitInstance hitInstance)
+    {
+        if (!hitInstance.Source.name.StartsWith("Charge Slash") &&
+            !hitInstance.Source.transform.parent.name.StartsWith("Charge Slash") &&
+            !hitInstance.Source.transform.parent.parent.name.StartsWith("Charge Slash")) return;
+        if (PlayerData.instance.silk >= 9)
+        {
+            __instance.TakeDamage(new HitInstance
+            {
+                Source = hitInstance.Source,
+                AttackType = AttackTypes.Spell,
+                DamageDealt = (int)(PlayerData.instance.nailDamage * PlayerData.instance.silk * PARRY_DAMAGE_MULTIPLIER),
+                Direction = hitInstance.Direction,
+                Multiplier = 1f,
+                MagnitudeMultiplier = 1f,
+                IgnoreInvulnerable = true,
+                HitEffectsType = hitInstance.HitEffectsType,
+                IsNailTag = hitInstance.IsNailTag
+            });
+            HeroController.instance.TakeSilk(PlayerData.instance.silk);
+            GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
+        }
     }
 
     //! DEBUG !\\
