@@ -29,43 +29,42 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         Instance = this;
         Logger.LogInfo($"Plugin {Name} ({Id}) has loaded!");
         if (!KeyCode.TryParse(Config.Bind(
-                "Nail Parry Everything",
+                "Keybinds",
                 "Parry Counter Key",
                 "LeftShift",
                 "Key used for a parry counter, attack while holding this and having enough silk to heal to deal damage."
             ).Value, out COUNTER_KEY)) COUNTER_KEY = KeyCode.LeftShift;
         AUTO_COUNTER = Config.Bind(
-            "Nail Parry Everything",
+            "Accessibility",
             "Auto Parry Counter",
             false,
-            "Perform a parry counter as soon as possible automatically, without needing to hold the counter key."
+            "Perform a parry counter as soon as possible automatically, without needing to hold the counter key (turn this on if youre playing on controller)."
         ).Value;
         PARRY_DAMAGE_MULTIPLIER = Config.Bind(
-            "Nail Parry Everything",
+            "Modifiers",
             "Parry Damage Multiplier",
             0.45f,
-            "This value is used to determine the fraction of your nail damage to be dealt to an enemy for a successful parry."
+            "This value is used to determine the fraction of your nail damage times the amount of silk you have to be dealt to an enemy for a successful parry. (nail damage * silk amount (min 9, max 18) * multiplier + nail damage)"
         ).Value;
         PARRY_INVULNERABILITY = Config.Bind(
-            "Nail Parry Everything",
+            "Modifiers",
             "Parry Invulnerability",
-            0.3f,
+            0.43f,
             "The invulnerability time in seconds hornet receives against an attack for parrying it."
         ).Value;
         SILK_GAIN_PER_PARRY = Config.Bind(
-            "Nail Parry Everything",
+            "Modifiers",
             "Silk Gain Per Parry",
             1,
             "The amount of silk you gain for a successfull parry."
         ).Value;
         ENEMY_INVINCIBILITY = Config.Bind(
-            "Nail Parry Everything",
+            "Accessibility",
             "Enemies Immune To Normal Damage",
             false,
             "Wether enemies should be immune to damage with the exception of parry counters."
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
-        SceneManager.sceneLoaded += (_, _) => PlayerData.instance.hasChargeSlash = true;
     }
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
@@ -100,11 +99,12 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
 
     public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
     {
-        healthManager.invincible = invincibility;
-        healthManager.immuneToNailAttacks = invincibility;
+        var res = invincibility && !healthManager.DoNotGiveSilk;
+        healthManager.invincible = res;
+        healthManager.immuneToNailAttacks = res;
         if (healthManager.sendDamageTo == null) return;
-        healthManager.sendDamageTo.invincible = invincibility;
-        healthManager.sendDamageTo.immuneToNailAttacks = invincibility;
+        healthManager.sendDamageTo.invincible = res;
+        healthManager.sendDamageTo.immuneToNailAttacks = res;
     }
 
     public static void OnParry()
@@ -147,7 +147,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         overlayText.horizontalOverflow = HorizontalWrapMode.Overflow;
         overlayText.verticalOverflow   = VerticalWrapMode.Overflow;
         var rect = overlayText.rectTransform;
-        rect.anchorMin = new Vector2(0.045f, 0f);
+        rect.anchorMin = new Vector2(0.005f, 0f);
         rect.anchorMax = new Vector2(0f, 0.8f);
         rect.pivot = new Vector2(0f, 0f);
         rect.offsetMin = new Vector2(10f, 10f);

@@ -9,6 +9,7 @@ public class ParryCollision : MonoBehaviour
 {
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (other.gameObject.name ==  "HeroBox" || other.gameObject.name.StartsWith("Enviro Region Simple") || other.gameObject.name.StartsWith("Scene")) return;
         //! HEALTH MANAGER
         var potentialHealthManager = other.gameObject.GetComponentInParent<HealthManager>();
         if (potentialHealthManager != null && !potentialHealthManager.doNotGiveSilk)
@@ -33,13 +34,23 @@ public class ParryCollision : MonoBehaviour
                 HeroController.instance.TakeSilk(PlayerData.instance.silk);
                 GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
             } else nailparryeverythingPlugin.SetHealthManagerInvincibility(potentialHealthManager, true);
-            logfsmdata(fsm);
+            var dbg = tweaks.getGameObjectParentRootNames(other.gameObject);
             nailparryeverythingPlugin.SetOverlayText("INTERNAL ENEMY NAME: \"" + fsm.name + "\"\n" +
-                                                     "ACTIVE STATE NAME:   \"" + fsm.ActiveStateName + "\"\n" +
-                                                     "AI TYPE:             \"" + fsm.Fsm.name + "\"");
+                                                     "ACTIVE STATE NAME: \"" + fsm.ActiveStateName + "\"\n" +
+                                                     "AI TYPE: \"" + fsm.Fsm.name + "\"\n" +
+                                                     "GAME OBJECT: \"" + dbg[0] + "\"\n" +
+                                                     "PARENT OBJECT: \"" + dbg[1] + "\"\n" +
+                                                     "ROOT OBJECT: \"" + dbg[2] + "\"");
             
             //? If the enemy related to this HealthManager isnt in a parryable active state, stop the function
-            if (!tweaks.IsValidActiveState(fsm.name, fsm.ActiveStateName) && !tweaks.CheckWhitelist(other)) return;
+            if (!tweaks.IsValidActiveState(fsm.name.Contains('(') ? fsm.name[..(fsm.name.IndexOf('(') - (fsm.name.EndsWith("(Clone)") ? 0 : 1))] : fsm.name, fsm.ActiveStateName) && !tweaks.CheckWhitelist(other)) return;
+        }
+        else
+        {
+            var dbg = tweaks.getGameObjectParentRootNames(other.gameObject);
+            nailparryeverythingPlugin.SetOverlayText("GAME OBJECT: \"" + dbg[0] + "\"\n" +
+                                                     "PARENT OBJECT: \"" + dbg[1] + "\"\n" +
+                                                     "ROOT OBJECT: \"" + dbg[2] + "\"");
         }
         //! DAMAGE HERO
         var damageHero = other.gameObject.GetComponentInParent<DamageHero>();

@@ -16,7 +16,7 @@ public static class tweaks
         { "Crawfather", ["Dive", "Peck Land"] },
         { "Bone Hunter Trapper", ["Charge", "Up Leap", "Diag Leap", "Fall"] },
         { "Conductor Boss", ["Charge"] },
-        { "Slab Fly Broodmother", ["Leap"] },
+        { "Slab Fly Broodmother", ["Leap", "Slam"] },
         { "Roachkeeper Chef", ["Slam In", "Butt Air", "Stomp"] },
         { "Swamp Shaman", ["Dive"] },
         { "Hunter Queen Boss", ["Dash Grind"] },
@@ -30,6 +30,7 @@ public static class tweaks
         { "Tormented Trobbio", ["Tornado"] },
         { "Seth", ["Jump Dive"] },
         { "Song Reed Grand", ["Stomp", "Cast"] },
+        { "Slab Fly Large", ["Stomp", "Grab Air", "Roll"] },
     };
     public static readonly string[] whitelist =
     [
@@ -43,6 +44,7 @@ public static class tweaks
         "Cloverstag White Sickle",
         "Slab Fly Glob",
         "Pollen Shot",
+        "Slab Fly Small Fresh",
     ];
     public static readonly string[] blacklist =
     [
