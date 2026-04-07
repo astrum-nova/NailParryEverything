@@ -1,17 +1,25 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace nailparryeverything;
 
 public static class tweaks
 {
-    public static readonly Dictionary<string, HashSet<string>> parryableStates = new() 
+    //? List of enemies and their unparryable states, sometimes an enemy's state starts with something from the parryable states list, but it turns out to be something like "Attack Recover" which should not be parryable
+    private static readonly Dictionary<string, HashSet<string>> unparryableStates = new()
+    {
+        { "Pilgrim 01", ["Attack Recover"] },
+        { "Pilgrim 03", ["Attack Recover"] },
+        { "Mossbone Mother", ["Swoop Return", "Swoop Antic"] },
+    };
+    //? List of enemies and their parryable states
+    private static readonly Dictionary<string, HashSet<string>> parryableStates = new() 
     {
         { "Mossbone Mother", ["Swoop"] },
+        { "Mossbone Crawler Fat", ["Charge"] },
         { "Bone Flyer Giant", ["Charge", "Stomp"] },
         { "Last Judge", ["Stomp Down", "Charge"] },
-        { "Bone Beast", ["Charge", "Leap Out"] },
+        { "Bone Beast", ["Charge", "Leap Out", "Descending"] },
         { "Phantom", ["A Dash", "G Dash", "Dragoon Down"] },
         { "Crawfather", ["Dive", "Peck Land"] },
         { "Bone Hunter Trapper", ["Charge", "Up Leap", "Diag Leap", "Fall"] },
@@ -37,9 +45,23 @@ public static class tweaks
         { "Bone Hunter Fly", ["Dthrust"] },
         { "Bone Hunter Fly Chief", ["Dthrust"] },
         { "Bone Flyer Smn", ["Fire"] },
+        { "Bone Flyer", ["Fire"] },
         { "Dancer A", ["Stomp"] },
         { "Dancer B", ["Stomp"] },
+        { "MossBone Fly", ["Drill"] },
+        { "Bone Roller", ["CCW", "CW"] },
+        { "Bone Goomba Large", ["Charge"] },
+        { "Pilgrim 01", ["Attack"] },
+        { "Pilgrim 03", ["Attack"] },
+        { "Aspid Collector", ["Chomp"] },
+        { "Bone Circler", ["Chase"] },
+        { "Rosary Thief", ["Dash Air"] },
+        { "Bone Thumper", ["Roll"] },
+        { "Shellwood Goomba Flyer", ["Chase"] },
+        { "Bloom Puncher", ["Punch"] },
+        { "Bone Crawler", ["Spike"] },
     };
+    //? Objects that can be parried, sometimes its impossible to check if something is an attack so we have a list for it
     private static readonly HashSet<string> whitelist =
     [
         "Tornado Event Sender",
@@ -51,27 +73,52 @@ public static class tweaks
         "Cloverstag White Sickle",
         "Slab Fly Glob",
         "Pollen Shot",
-        "Slab Fly Small Fresh",
         "Stomp Blast",
         "Stomp Colliders",
         "Collider Slam",
         "DashCollider",
         "Crawfather Attack Chain"
     ];
+    //? Objects that cannot be parried, sometimes objects like hazards are considered attacks and they should not be parried 
     private static readonly HashSet<string> blacklist =
     [
         "Spike Collider",
         "Splinter Queen Spike",
         "Splinter Queen Gate Spike",
         "Coral Crust Tree Plat",
-        "Battle Gate Coral"
+        "Battle Gate Coral",
+        "Head Collider"
     ];
-    public static bool CheckList(Collider2D other, bool whiteOrBlackList)
+    //? Enemies that can be attacked directly
+    private static readonly HashSet<string> fragileList =
+    [
+        "Shellwood Gnat",
+        "Shellwood Goomba",
+        "Bone Goomba",
+        "Slab Fly Small Fresh",
+        "MossBone Cocoon",
+        "MossBone Crawler",
+    ];
+    //? If an enemy's name starts with something from the fragile list we do an additional check to make sure it a tougher version of that enemy that can be parried, like the goombas
+    private static readonly HashSet<string> tuffList =
+    [
+        "Bone Goomba Large",
+        "MossBone Crawler Fat",
+    ];
+    public static bool CheckList(Collider2D other, int listId)
     {
         var gameObject = other.gameObject;
         var parent = gameObject.transform.parent;
         var root = gameObject.transform.root;
-        foreach (var entry in whiteOrBlackList ? whitelist : blacklist)
+        
+        //? Harnessing 1% team cherrys power to create abominations of code 
+        foreach (var entry in listId switch
+                 {
+                     0 => blacklist,
+                     1 => whitelist,
+                     2 => fragileList,
+                     _ => tuffList
+                 })
         {
             if (gameObject != null && gameObject.name.StartsWith(entry)) return true;
             if (parent != null && parent.name.StartsWith(entry)) return true;
@@ -105,7 +152,8 @@ public static class tweaks
     public static bool IsValidActiveState(string bossName, string stateName)
     {
         if (!parryableStates.TryGetValue(bossName, out var states)) return false;
-        foreach (var state in states) if (stateName.StartsWith(state)) return true;
+        var unparryable = unparryableStates.TryGetValue(bossName, out var unpstates) && unpstates.Contains(stateName);
+        foreach (var state in states) if (stateName.StartsWith(state) && !unparryable) return true;
         return false;
     }
 }

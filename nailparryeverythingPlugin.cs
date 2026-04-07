@@ -1,5 +1,4 @@
-using System;
-using System.Globalization;
+using System.Collections;
 using BepInEx;
 using BepInEx.Logging;
 using GlobalEnums;
@@ -7,7 +6,6 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Object = UnityEngine.Object;
 
 namespace nailparryeverything;
 
@@ -20,10 +18,11 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     //! DEBUG
     public static nailparryeverythingPlugin Instance { get; set; } = null!;
     public static bool ENEMY_INVINCIBILITY;
+    public static bool DEBUG_INFO;
     public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
     public static int SILK_GAIN_PER_PARRY;
-
+    public static bool firstSinnerScene;
     private void Awake()
     {
         Instance = this;
@@ -57,14 +56,25 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             "Quick Nail Art Charge",
             true,
             "Quick charge for nail arts always active, basically the Pin Badge tool effect."
+        ).Value;
+        DEBUG_INFO = Config.Bind(
+            "Debug",
+            "Show Debug Info",
+            true,
+            "Wether to show debug information at the top left of the game."
         ).Value; 
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
-        SceneManager.sceneLoaded += (_, _) =>
+        SceneManager.sceneLoaded += (scene, _) =>
         {
-            PlayerData.instance.hasChargeSlash = true;
-            if (!quickCharge) return;
-            HeroController.instance.NAIL_CHARGE_TIME = HeroController.instance.NAIL_CHARGE_TIME_QUICK;
-            HeroController.instance.NAIL_CHARGE_BEGIN_TIME = HeroController.instance.NAIL_CHARGE_BEGIN_TIME_QUICK;
+            firstSinnerScene = scene.name.Equals("Slab_10b"); //! I WROTE THE SCENE NAME FROM MEMORY LETS SEE IF IM THE GOAT ok im not the goat
+            try
+            {
+                PlayerData.instance.hasChargeSlash = true;
+                if (!quickCharge) return;
+                HeroController.instance.NAIL_CHARGE_TIME = HeroController.instance.NAIL_CHARGE_TIME_QUICK / 2;
+                HeroController.instance.NAIL_CHARGE_BEGIN_TIME = HeroController.instance.NAIL_CHARGE_BEGIN_TIME_QUICK / 2;
+                if (DEBUG_INFO) SetOverlayText("Debug info is enabled, use this to help development for the mod,\ninformation about the object you just hit will appear here.\nYou can turn it off in the mod settings if you want.");
+            } catch {/*ignored*/}
         };
     }
     [HarmonyPostfix]
@@ -107,47 +117,94 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Hit))]
     private static void HealthManager_Hit(HealthManager __instance, ref HitInstance hitInstance)
     {
-        SetHealthManagerInvincibility(__instance, true);
-        __instance.InvincibleFromDirection = 0;
-        __instance.invincibleFromDirection = 0;
+        var collider2d = __instance.gameObject.GetComponentInParent<Collider2D>();
+        if (tweaks.CheckList(collider2d, 2) && !tweaks.CheckList(collider2d, 3))
+        {
+            __instance.doNotGiveSilk = true;
+            SetHealthManagerInvincibility(__instance, false);
+        }
+        else
+        {
+            SetHealthManagerInvincibility(__instance, true);
+            __instance.InvincibleFromDirection = 0;
+            __instance.invincibleFromDirection = 0;
+        }
     }
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Invincible))]
     private static void HealthManager_Invincible(HealthManager __instance, ref HitInstance hitInstance)
     {
-        if (!hitInstance.Source.name.StartsWith("Charge Slash") &&
-            !hitInstance.Source.transform.parent.name.StartsWith("Charge Slash") &&
-            !hitInstance.Source.transform.parent.parent.name.StartsWith("Charge Slash")) return;
-        if (PlayerData.instance.silk >= 9)
+        try
         {
-            __instance.TakeDamage(new HitInstance
+            if (!hitInstance.Source.name.StartsWith("Charge Slash") &&
+                !hitInstance.Source.transform.parent.name.StartsWith("Charge Slash") &&
+                !hitInstance.Source.transform.parent.parent.name.StartsWith("Charge Slash")) return;
+            if (PlayerData.instance.silk >= 9)
             {
-                Source = hitInstance.Source,
-                AttackType = AttackTypes.Spell,
-                DamageDealt = (int)(PlayerData.instance.nailDamage * PlayerData.instance.silk * PARRY_DAMAGE_MULTIPLIER),
-                Direction = hitInstance.Direction,
-                Multiplier = 1f,
-                MagnitudeMultiplier = 1f,
-                IgnoreInvulnerable = true,
-                HitEffectsType = hitInstance.HitEffectsType,
-                IsNailTag = hitInstance.IsNailTag
-            });
-            HeroController.instance.TakeSilk(PlayerData.instance.silk);
-            GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
-        }
+                __instance.TakeDamage(new HitInstance
+                {
+                    Source = hitInstance.Source,
+                    AttackType = AttackTypes.Spell,
+                    DamageDealt = (int)(PlayerData.instance.nailDamage * PlayerData.instance.silk * PARRY_DAMAGE_MULTIPLIER),
+                    Direction = hitInstance.Direction,
+                    Multiplier = 1f,
+                    MagnitudeMultiplier = 1f,
+                    IgnoreInvulnerable = true,
+                    HitEffectsType = hitInstance.HitEffectsType,
+                    IsNailTag = hitInstance.IsNailTag
+                });
+                HeroController.instance.TakeSilk(PlayerData.instance.silk);
+                GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
+                
+                //? Special treatment for first sinner my beloved to let the player break her bind
+            } else if (firstSinnerScene && PlayMakerFSM.FindFsmOnGameObject(__instance.gameObject, "Control").ActiveStateName is "Bind Silk" or "Bind Heal")
+            {
+                __instance.TakeDamage(new HitInstance
+                {
+                    Source = hitInstance.Source,
+                    AttackType = AttackTypes.Spell,
+                    DamageDealt = 0,
+                    Direction = hitInstance.Direction,
+                    Multiplier = 1f,
+                    MagnitudeMultiplier = 1f,
+                    IgnoreInvulnerable = true,
+                    HitEffectsType = hitInstance.HitEffectsType,
+                    IsNailTag = hitInstance.IsNailTag
+                });
+            }
+        } catch {/*ignored*/}
     }
+    private static bool canAddSilk = true;
     public static void OnParry()
     {
-        if (PlayerData.instance.silk < PlayerData.instance.silkMax) HeroController.instance.AddSilkParts(SILK_GAIN_PER_PARRY, true);
+        if (PlayerData.instance.silk >= PlayerData.instance.CurrentSilkMax) return;
+        if (!canAddSilk) return;
+        canAddSilk = false;
+        Instance.StartCoroutine(AddSilkPart());
     }
+
+    private static IEnumerator AddSilkPart()
+    {
+
+        for (var i = 0; i < SILK_GAIN_PER_PARRY; i++)
+        {
+            yield return new WaitForSeconds(0.05f);
+            HeroController.instance.AddSilkParts(1, true);
+        }
+        canAddSilk = true;
+    }
+    
     //! DEBUG !\\
     private static bool keepMaxHP;
     private void FixedUpdate()
     {
-        if (InputHandler.Instance && InputHandler.Instance.inputActions.Up && InputHandler.Instance.inputActions.DreamNail) HeroController.instance.RefillSilkToMax();
-        if (InputHandler.Instance && InputHandler.Instance.inputActions.Left && InputHandler.Instance.inputActions.DreamNail) keepMaxHP = true;
-        if (InputHandler.Instance && InputHandler.Instance.inputActions.Right && InputHandler.Instance.inputActions.DreamNail) keepMaxHP = false;
-        if (keepMaxHP) HeroController.instance.MaxHealth();
+        try
+        {
+            if (InputHandler.Instance && InputHandler.Instance.inputActions.Up && InputHandler.Instance.inputActions.DreamNail) HeroController.instance.RefillSilkToMax();
+            if (InputHandler.Instance && InputHandler.Instance.inputActions.Left && InputHandler.Instance.inputActions.DreamNail) keepMaxHP = true;
+            if (InputHandler.Instance && InputHandler.Instance.inputActions.Right && InputHandler.Instance.inputActions.DreamNail) keepMaxHP = false;
+            if (keepMaxHP) HeroController.instance.MaxHealth();
+        } catch {/*ignored*/}
     }
     private static Text? overlayText;
     private static GameObject? overlayCanvas;
@@ -188,6 +245,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     }
     public static void SetOverlayText(string text)
     {
+        if (!DEBUG_INFO) return;
         if (overlayText == null) CreateOverlay();
         overlayText!.text = $"[Nail Parry Everything]\n" + text;
     }

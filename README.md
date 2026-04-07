@@ -8,7 +8,6 @@ A Hollow Knight: Silksong mod.
 > general
 - check the disabledamagehero coroutine in ParryCollision.cs lol
 - blacklist parries for the lightning tool
-- silk max problem again xd
 
 # TWEAKS NEEDED
 
