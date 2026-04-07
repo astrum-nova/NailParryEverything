@@ -43,8 +43,8 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         SILK_GAIN_PER_PARRY = Config.Bind(
             "Modifiers",
             "Silk Gain Per Parry",
-            1,
-            "The amount of silk you gain for a successfull parry."
+            5,
+            "The amount of silk you gain for a successfull parry, 3 amounts to 1 bar of silk."
         ).Value;
         ENEMY_INVINCIBILITY = Config.Bind(
             "Accessibility",
@@ -52,8 +52,20 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             true,
             "Whether enemies should be immune to damage with the exception of parry counters. Set this to false if you want to be able to damange enemies without parry counters."
         ).Value;
+        var quickCharge = Config.Bind(
+            "Accessibility",
+            "Quick Nail Art Charge",
+            true,
+            "Quick charge for nail arts always active, basically the Pin Badge tool effect."
+        ).Value; 
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
-        SceneManager.sceneLoaded += (_, _) => PlayerData.instance.hasChargeSlash = true;
+        SceneManager.sceneLoaded += (_, _) =>
+        {
+            PlayerData.instance.hasChargeSlash = true;
+            if (!quickCharge) return;
+            HeroController.instance.NAIL_CHARGE_TIME = HeroController.instance.NAIL_CHARGE_TIME_QUICK;
+            HeroController.instance.NAIL_CHARGE_BEGIN_TIME = HeroController.instance.NAIL_CHARGE_BEGIN_TIME_QUICK;
+        };
     }
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
@@ -81,11 +93,9 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         __instance.noClashFreeze = false;
         __instance.preventClashTink = false;
     }
-
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HealthManager), "Start")]
     private static void HealthManager_Start(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
-
     public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
     {
         var res = invincibility && !healthManager.DoNotGiveSilk && ENEMY_INVINCIBILITY;
@@ -93,16 +103,14 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         if (healthManager.sendDamageTo == null) return;
         healthManager.sendDamageTo.invincible = res;
     }
-
-    public static void OnParry()
-    {
-        if (PlayerData.instance.silk < PlayerData.instance.CurrentSilkMax) HeroController.instance.AddSilk(SILK_GAIN_PER_PARRY, true);
-    }
-
     [HarmonyPrefix]
     [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Hit))]
-    private static void HealthManager_Hit(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
-    
+    private static void HealthManager_Hit(HealthManager __instance, ref HitInstance hitInstance)
+    {
+        SetHealthManagerInvincibility(__instance, true);
+        __instance.InvincibleFromDirection = 0;
+        __instance.invincibleFromDirection = 0;
+    }
     [HarmonyPostfix]
     [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Invincible))]
     private static void HealthManager_Invincible(HealthManager __instance, ref HitInstance hitInstance)
@@ -128,11 +136,18 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             GameManager.instance.FreezeMoment(FreezeMomentTypes.BossStun);
         }
     }
-
+    public static void OnParry()
+    {
+        if (PlayerData.instance.silk < PlayerData.instance.silkMax) HeroController.instance.AddSilkParts(SILK_GAIN_PER_PARRY, true);
+    }
     //! DEBUG !\\
+    private static bool keepMaxHP;
     private void FixedUpdate()
     {
-        if (InputHandler.Instance.inputActions.SuperDash && InputHandler.Instance.inputActions.DreamNail) HeroController.instance.RefillSilkToMax();
+        if (InputHandler.Instance && InputHandler.Instance.inputActions.Up && InputHandler.Instance.inputActions.DreamNail) HeroController.instance.RefillSilkToMax();
+        if (InputHandler.Instance && InputHandler.Instance.inputActions.Left && InputHandler.Instance.inputActions.DreamNail) keepMaxHP = true;
+        if (InputHandler.Instance && InputHandler.Instance.inputActions.Right && InputHandler.Instance.inputActions.DreamNail) keepMaxHP = false;
+        if (keepMaxHP) HeroController.instance.MaxHealth();
     }
     private static Text? overlayText;
     private static GameObject? overlayCanvas;
@@ -141,7 +156,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         if (overlayCanvas != null) return;
 
         overlayCanvas = new GameObject("Nail Parry Everything Canvas");
-        GameObject.DontDestroyOnLoad(overlayCanvas);
+        DontDestroyOnLoad(overlayCanvas);
 
         var canvas = overlayCanvas.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -155,7 +170,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
 
         overlayText = textObj.AddComponent<Text>();
         overlayText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-        overlayText.fontSize = 24;
+        overlayText.fontSize = 18;
         overlayText.color = Color.white;
         overlayText.alignment = TextAnchor.UpperLeft;
         var outline = overlayText.gameObject.AddComponent<Outline>();
