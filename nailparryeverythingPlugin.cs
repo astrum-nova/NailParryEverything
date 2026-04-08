@@ -118,7 +118,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     private static void HealthManager_Hit(HealthManager __instance, ref HitInstance hitInstance)
     {
         var collider2d = __instance.gameObject.GetComponentInParent<Collider2D>();
-        if (tweaks.CheckList(collider2d, 2) && !tweaks.CheckList(collider2d, 3))
+        if (tweaks.CheckList(collider2d, 2) && !tweaks.CheckList(collider2d, 3) || hitInstance.AttackType == AttackTypes.Spikes)
         {
             __instance.doNotGiveSilk = true;
             SetHealthManagerInvincibility(__instance, false);

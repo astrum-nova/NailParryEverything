@@ -53,6 +53,7 @@ public static class tweaks
         { "Bone Goomba Large", ["Charge"] },
         { "Pilgrim 01", ["Attack"] },
         { "Pilgrim 03", ["Attack"] },
+        { "Pilgrim Fly", ["Charge"] },
         { "Aspid Collector", ["Chomp"] },
         { "Bone Circler", ["Chase"] },
         { "Rosary Thief", ["Dash Air"] },
