@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using BepInEx;
 using BepInEx.Logging;
@@ -19,6 +20,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static nailparryeverythingPlugin Instance { get; set; } = null!;
     public static bool ENEMY_INVINCIBILITY;
     public static bool DEBUG_INFO;
+    public static bool PARRY_FREEZE;
     public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
     public static int SILK_GAIN_PER_PARRY;
@@ -61,7 +63,13 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             "Debug",
             "Show Debug Info",
             true,
-            "Wether to show debug information at the top left of the game."
+            "Whether to show debug information at the top left of the game."
+        ).Value; 
+        PARRY_FREEZE = Config.Bind(
+            "Accessibility",
+            "Parry Freeze",
+            true,
+            "Whether to freeze the game when you parry something."
         ).Value; 
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
         SceneManager.sceneLoaded += (scene, _) =>
@@ -173,6 +181,14 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
                 });
             }
         } catch {/*ignored*/}
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(GameManager), nameof(GameManager.FreezeMoment), typeof(FreezeMomentTypes), typeof(Action))]
+    private static bool GameManager_FreezeMoment(GameManager __instance, FreezeMomentTypes type, Action onFinish)
+    {
+        if (type == FreezeMomentTypes.NailClashEffect && !PARRY_FREEZE) return false;
+        return true;
     }
     private static bool canAddSilk = true;
     public static void OnParry()
