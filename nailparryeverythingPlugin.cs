@@ -59,7 +59,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         DEBUG_INFO = Config.Bind(
             "Debug",
             "Show Debug Info",
-            true,
+            false,
             "Whether to show debug information at the top left of the game."
         ).Value;
         PARRY_FREEZE = Config.Bind(
