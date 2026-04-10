@@ -38,22 +38,28 @@ public class ParryCollision : MonoBehaviour
         
         //! DAMAGE HERO
         var damageHero = other.gameObject.GetComponentInParent<DamageHero>();
-        if ((damageHero == null || !damageHero.enabled || tweaks.CheckList(other, 0)) && !tweaks.CheckList(other, 1)) return;
-        if (damageHero != null) nailparryeverythingPlugin.Instance.StartCoroutine(damageHero.NailClash(0, "NPE PARRY", transform.position));
-        HeroController.instance.NailParry();
+        if ((damageHero == null || tweaks.CheckList(other, 0)) && !tweaks.CheckList(other, 1)) return;
+        if (damageHero != null)
+        {
+            //StartCoroutine(DisableDamageHero(damageHero));
+            nailparryeverythingPlugin.Instance.StartCoroutine(damageHero.NailClash(0, "Nail Attack", transform.position));
+            if (disableDamageHeroRoutine != null) StopCoroutine(disableDamageHeroRoutine);
+            disableDamageHeroRoutine = StartCoroutine(DisableDamageHero(damageHero));
+        }
+        else
+        {
+            HeroController.instance.parryInvulnTimer = nailparryeverythingPlugin.PARRY_INVULNERABILITY;
+            nailparryeverythingPlugin.OnParry();
+        }
         if (canFreeze)
         {
             canFreeze = false;
             nailparryeverythingPlugin.Instance.StartCoroutine(ImJustGettingADrink());
             GameManager.instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
         }
-        if (damageHero != null) StartCoroutine(DisableDamageHero(damageHero));
-        else
-        {
-            HeroController.instance.StartInvulnerable(nailparryeverythingPlugin.PARRY_INVULNERABILITY);
-            nailparryeverythingPlugin.OnParry();
-        }
     }
+
+    private Coroutine? disableDamageHeroRoutine;
     private static IEnumerator DisableDamageHero(DamageHero __instance)
     {
         __instance.enabled = false;

@@ -190,6 +190,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         if (type == FreezeMomentTypes.NailClashEffect && !PARRY_FREEZE) return false;
         return true;
     }
+
     private static bool canAddSilk = true;
     public static void OnParry()
     {
@@ -199,6 +200,19 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         Instance.StartCoroutine(AddSilkPart());
     }
 
+    private static IEnumerator ResetAttackDelay()
+    {
+        yield return new WaitForSeconds(0.1f);
+        var hc = HeroController.instance;
+        hc.attackDuration = 0f;
+        hc.attack_cooldown = 0f;
+        hc.throwToolCooldown = 0f;
+        hc.CancelAttackNotDownspikeBounce();
+        if (hc.cState.onGround)
+        {
+            hc.animCtrl.SetPlayRunToIdle();
+        }
+    }
     private static IEnumerator AddSilkPart()
     {
 
