@@ -13,10 +13,6 @@ namespace nailparryeverything;
 [BepInAutoPlugin(id: "io.github.astrum-nova.nailparryeverything")]
 public partial class nailparryeverythingPlugin : BaseUnityPlugin
 {
-    //! DEBUG
-    private static readonly ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource("[NPE LOG]");
-    public static void log(string msg) => logger.LogInfo(msg);
-    //! DEBUG
     public static nailparryeverythingPlugin Instance { get; set; } = null!;
     public static bool ENEMY_INVINCIBILITY;
     public static bool DEBUG_INFO;
@@ -24,6 +20,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static float PARRY_DAMAGE_MULTIPLIER;
     public static float PARRY_INVULNERABILITY;
     public static int SILK_GAIN_PER_PARRY;
+    public static bool DEFAULT_PARRY_INVCINCIBILITY;
     public static bool firstSinnerScene;
     private void Awake()
     {
@@ -64,13 +61,19 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             "Show Debug Info",
             true,
             "Whether to show debug information at the top left of the game."
-        ).Value; 
+        ).Value;
         PARRY_FREEZE = Config.Bind(
             "Accessibility",
             "Parry Freeze",
             true,
             "Whether to freeze the game when you parry something."
         ).Value; 
+        DEFAULT_PARRY_INVCINCIBILITY = Config.Bind(
+            "Accessibility",
+            "Default Parry Invincibility",
+            false,
+            "The default parry invincibility is a lot less forgiving, you might need to spam sometimes or be more precise but its pretty doable."
+        ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
         SceneManager.sceneLoaded += (scene, _) =>
         {
@@ -85,42 +88,37 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             } catch {/*ignored*/}
         };
     }
+    
+    //* NAIL ATTACK PATCHES
     [HarmonyPostfix]
     [HarmonyPatch(typeof(NailSlash), nameof(NailSlash.Awake))]
-    private static void NailSlash_Awake(NailSlash __instance) => __instance.gameObject.AddComponent<ParryCollision>();
-    [HarmonyPostfix]
     [HarmonyPatch(typeof(DashStabNailAttack), nameof(DashStabNailAttack.Awake))]
-    private static void DashStabNailAttack_Awake(DashStabNailAttack __instance) => __instance.gameObject.AddComponent<ParryCollision>();
-    [HarmonyPostfix]
     [HarmonyPatch(typeof(Downspike), nameof(Downspike.StartSlash))]
-    private static void Downspike_StartSlash(Downspike __instance) => __instance.gameObject.AddComponent<ParryCollision>();
+    private static void AddParryCollision(MonoBehaviour __instance) => __instance.gameObject.AddComponent<ParryCollision>();
+    
+    //* ENEMY DAMAGER PATCHES
     [HarmonyPostfix]
     [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.NailClash))]
     private static void DamageHero_NailClash(DamageHero __instance)
     {
+        if (__instance == null) return;
         HeroController.instance.StartInvulnerable(tweaks.HandleAdditionalIframes(__instance.gameObject));
         OnParry();
     }
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(DamageHero), "OnEnable")]
+    [HarmonyPatch(typeof(DamageHero), nameof(DamageHero.OnEnable))]
     private static void DamageHero_OnEnable(DamageHero __instance)
     {
-        //if (__instance.gameObject.GetComponentInParent<HealthManager>() != null) return;
         __instance.canClashTink = true;
         __instance.forceParry = true;
         __instance.noClashFreeze = false;
         __instance.preventClashTink = false;
     }
+    
+    //* HEALTH MANAGER PATCHES
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(HealthManager), "Start")]
+    [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.OnEnable))]
     private static void HealthManager_Start(HealthManager __instance) => SetHealthManagerInvincibility(__instance, true);
-    public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
-    {
-        var res = invincibility && !healthManager.DoNotGiveSilk && ENEMY_INVINCIBILITY;
-        healthManager.invincible = res;
-        if (healthManager.sendDamageTo == null) return;
-        healthManager.sendDamageTo.invincible = res;
-    }
     [HarmonyPrefix]
     [HarmonyPatch(typeof(HealthManager), nameof(HealthManager.Hit))]
     private static void HealthManager_Hit(HealthManager __instance, ref HitInstance hitInstance)
@@ -183,14 +181,12 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         } catch {/*ignored*/}
     }
 
+    //* GAME MANAGER FREEZE PATCHE
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.FreezeMoment), typeof(FreezeMomentTypes), typeof(Action))]
-    private static bool GameManager_FreezeMoment(GameManager __instance, FreezeMomentTypes type, Action onFinish)
-    {
-        if (type == FreezeMomentTypes.NailClashEffect && !PARRY_FREEZE) return false;
-        return true;
-    }
+    private static bool GameManager_FreezeMoment(GameManager __instance, FreezeMomentTypes type, Action onFinish) => type != FreezeMomentTypes.NailClashEffect || PARRY_FREEZE;
 
+    //* OTHER LOGIC
     private static bool canAddSilk = true;
     public static void OnParry()
     {
@@ -199,23 +195,15 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
         canAddSilk = false;
         Instance.StartCoroutine(AddSilkPart());
     }
-
-    private static IEnumerator ResetAttackDelay()
+    public static void SetHealthManagerInvincibility(HealthManager healthManager, bool invincibility)
     {
-        yield return new WaitForSeconds(0.1f);
-        var hc = HeroController.instance;
-        hc.attackDuration = 0f;
-        hc.attack_cooldown = 0f;
-        hc.throwToolCooldown = 0f;
-        hc.CancelAttackNotDownspikeBounce();
-        if (hc.cState.onGround)
-        {
-            hc.animCtrl.SetPlayRunToIdle();
-        }
+        var res = invincibility && !healthManager.DoNotGiveSilk && ENEMY_INVINCIBILITY;
+        healthManager.invincible = res;
+        if (healthManager.sendDamageTo == null) return;
+        healthManager.sendDamageTo.invincible = res;
     }
     private static IEnumerator AddSilkPart()
     {
-
         for (var i = 0; i < SILK_GAIN_PER_PARRY; i++)
         {
             yield return new WaitForSeconds(0.05f);
@@ -225,6 +213,8 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     }
     
     //! DEBUG !\\
+    private static readonly ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource("[NPE LOG]");
+    public static void log(string msg) => logger.LogInfo(msg);
     private static bool keepMaxHP;
     private void FixedUpdate()
     {
