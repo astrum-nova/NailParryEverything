@@ -10,7 +10,7 @@ public static class tweaks
     {
         { "Pilgrim 01", ["Attack Recover"] },
         { "Pilgrim 03", ["Attack Recover"] },
-        { "Mossbone Mother", ["Swoop Return", "Swoop Antic"] },
+        { "Mossbone Mother", ["Swoop Return", "Swoop Antic", "Swoop Recover"] },
     };
     //? List of enemies and their parryable states
     private static readonly Dictionary<string, HashSet<string>> parryableStates = new() 
@@ -143,12 +143,9 @@ public static class tweaks
         if (parentName.StartsWith("sand_burst_effect_uppercut")) return 0.3f; //* Watcher at the edge
         if (gameObjectName.StartsWith("Swamp Shaman Fireball")) return 0.3f; //* Groal the Great
         if (gameObjectName.StartsWith("Abyss Bullet")) return 0.3f; //* Lost Garmond
+        if (gameObjectName.StartsWith("damager") && parentName.StartsWith("Lost_Lace_Wake_Tendrils") || gameObjectName.StartsWith("Charge Hit") && parentName.StartsWith("Lost Lace Boss")) return 0.2f; //* Lost Lace
         return 0;
     }
-    
-    //! DEBUG !\\
-    public static string[] getGameObjectParentRootNames(GameObject gameObject) => [gameObject == null ? "NULLGAMEOBJECT" : gameObject.name, gameObject.transform.parent ==  null ? "NULLPARENT" : gameObject.transform.parent.name,  gameObject.transform.root ==  null ? "NULLROOT" : gameObject.transform.root.name];
-    //! DEBUG !\\
     
     public static bool IsValidActiveState(string bossName, string stateName)
     {
@@ -157,4 +154,8 @@ public static class tweaks
         foreach (var state in states) if (stateName.StartsWith(state) && !unparryable) return true;
         return false;
     }
+    
+    //! DEBUG !\\
+    public static string[] getGameObjectParentRootNames(GameObject gameObject) => [gameObject == null ? "NULLGAMEOBJECT" : gameObject.name, gameObject.transform.parent ==  null ? "NULLPARENT" : gameObject.transform.parent.name,  gameObject.transform.root ==  null ? "NULLROOT" : gameObject.transform.root.name];
+    //! DEBUG !\\
 }
