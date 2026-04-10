@@ -21,6 +21,7 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     public static float PARRY_INVULNERABILITY;
     public static int SILK_GAIN_PER_PARRY;
     public static bool DEFAULT_PARRY_INVCINCIBILITY;
+    public static bool ENABLE_CHEATS;
     public static bool firstSinnerScene;
     private void Awake()
     {
@@ -54,13 +55,13 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             "Accessibility",
             "Quick Nail Art Charge",
             true,
-            "Quick charge for nail arts always active, basically the Pin Badge tool effect."
+            "Quick charge for nail arts always active, basically the Pin Badge tool effect but better."
         ).Value;
         DEBUG_INFO = Config.Bind(
             "Debug",
             "Show Debug Info",
             false,
-            "Whether to show debug information at the top left of the game."
+            "Whether to show debug information at the top left of the screen."
         ).Value;
         PARRY_FREEZE = Config.Bind(
             "Accessibility",
@@ -73,6 +74,12 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
             "Default Parry Invincibility",
             false,
             "The default parry invincibility is a lot less forgiving, you might need to spam sometimes or be more precise but its pretty doable."
+        ).Value;
+        ENABLE_CHEATS = Config.Bind(
+            "Debug",
+            "Enable Cheats",
+            false,
+            "You might run into arenas with enemies that havent been whitelisted for autokill, and have no parryable attacks, leading to a softlock. Thats why i provided some cheats with the mod: NEEDOLIN+UP > FULL SILK, NEEDOLIN+LEFT > GODMODE ON, NEEDOLIN+RIGHT > GODMODE OFF."
         ).Value;
         Harmony.CreateAndPatchAll(typeof(nailparryeverythingPlugin));
         SceneManager.sceneLoaded += (scene, _) =>
@@ -213,11 +220,12 @@ public partial class nailparryeverythingPlugin : BaseUnityPlugin
     }
     
     //! DEBUG !\\
-    private static readonly ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource("[NPE LOG]");
-    public static void log(string msg) => logger.LogInfo(msg);
+    //private static readonly ManualLogSource logger = BepInEx.Logging.Logger.CreateLogSource("[NPE LOG]");
+    //public static void log(string msg) => logger.LogInfo(msg);
     private static bool keepMaxHP;
     private void FixedUpdate()
     {
+        if (!ENABLE_CHEATS) return;
         try
         {
             if (InputHandler.Instance && InputHandler.Instance.inputActions.Up && InputHandler.Instance.inputActions.DreamNail) HeroController.instance.RefillSilkToMax();

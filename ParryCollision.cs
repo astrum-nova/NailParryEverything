@@ -20,8 +20,11 @@ public class ParryCollision : MonoBehaviour
             if (fsm == null) fsm = potentialHealthManager.gameObject.GetComponent<PlayMakerFSM>();
 
             //! DEBUG !\\
-            var dbg = tweaks.getGameObjectParentRootNames(other.gameObject);
-            if (nailparryeverythingPlugin.DEBUG_INFO) try { nailparryeverythingPlugin.SetOverlayText("INTERNAL ENEMY NAME: \"" + fsm.name + "\"\n" + "ACTIVE STATE NAME: \"" + fsm.ActiveStateName + "\"\n" + "AI TYPE: \"" + fsm.Fsm.name + "\"\n" + "GAME OBJECT: \"" + dbg[0] + "\"\n" + "PARENT OBJECT: \"" + dbg[1] + "\"\n" + "ROOT OBJECT: \"" + dbg[2] + "\""); } catch { nailparryeverythingPlugin.SetOverlayText("ERROR TRYING TO SET DEBUG TEXT"); }
+            if (nailparryeverythingPlugin.DEBUG_INFO)
+            {
+                var dbg = tweaks.getGameObjectParentRootNames(other.gameObject);
+                if (nailparryeverythingPlugin.DEBUG_INFO) try { nailparryeverythingPlugin.SetOverlayText("INTERNAL ENEMY NAME: \"" + fsm.name + "\"\n" + "ACTIVE STATE NAME: \"" + fsm.ActiveStateName + "\"\n" + "AI TYPE: \"" + fsm.Fsm.name + "\"\n" + "GAME OBJECT: \"" + dbg[0] + "\"\n" + "PARENT OBJECT: \"" + dbg[1] + "\"\n" + "ROOT OBJECT: \"" + dbg[2] + "\""); } catch { nailparryeverythingPlugin.SetOverlayText("ERROR TRYING TO SET DEBUG TEXT"); }
+            }
             //! DEBUG !\\
             
             //? If the enemy related to this HealthManager isnt in a parryable active state, stop the function
@@ -54,12 +57,11 @@ public class ParryCollision : MonoBehaviour
             HeroController.instance.parryInvulnTimer = nailparryeverythingPlugin.PARRY_INVULNERABILITY;
             nailparryeverythingPlugin.OnParry();
         }
-        if (canFreeze && nailparryeverythingPlugin.PARRY_FREEZE)
-        {
-            canFreeze = false;
-            nailparryeverythingPlugin.Instance.StartCoroutine(ImJustGettingADrink());
-            GameManager.instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
-        }
+
+        if (!canFreeze || !nailparryeverythingPlugin.PARRY_FREEZE) return;
+        canFreeze = false;
+        nailparryeverythingPlugin.Instance.StartCoroutine(ImJustGettingADrink());
+        GameManager.instance.FreezeMoment(FreezeMomentTypes.NailClashEffect);
     }
     private static IEnumerator DisableDamageHero(DamageHero damageHero)
     {
