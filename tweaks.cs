@@ -61,6 +61,8 @@ public static class tweaks
         { "Shellwood Goomba Flyer", ["Chase"] },
         { "Bloom Puncher", ["Punch"] },
         { "Bone Crawler", ["Spike"] },
+        { "Garmond Fighter", ["Charge", "Stomp"] },
+        { "Garmond Black Threaded Fighter", ["Stomp"] },
     };
     //? Objects that can be parried, sometimes its impossible to check if something is an attack so we have a list for it
     private static readonly HashSet<string> whitelist =
